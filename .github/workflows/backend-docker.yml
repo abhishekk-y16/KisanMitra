@@ -40,7 +40,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/kisanmitra-backend:${{ github.sha }}
 
       - name: Trigger Render deploy (optional)
-        if: secrets.RENDER_API_KEY && secrets.RENDER_SERVICE_ID
+        if: ${{ secrets.RENDER_API_KEY != '' && secrets.RENDER_SERVICE_ID != '' }}
         run: |
           echo "Triggering Render deploy for service $RENDER_SERVICE_ID"
           curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
