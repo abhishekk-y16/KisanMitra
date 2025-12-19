@@ -1,6 +1,7 @@
 {
   "name": "kisan-mitra-frontend",
   "version": "0.1.0",
+  "homepage": "https://abhishekk-y16.github.io/KisanMitra/",
   "private": true,
   "scripts": {
     "dev": "next dev",
