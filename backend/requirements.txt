@@ -1,0 +1,17 @@
+fastapi==0.115.2
+uvicorn[standard]==0.32.0
+httpx==0.27.2
+pydantic==2.9.2
+python-dotenv==1.0.1
+numpy==2.1.3
+pandas==2.2.3
+statsmodels==0.14.2
+s2sphere==0.2.5
+scikit-learn==1.5.2
+# Required for form/multipart parsing used by upload endpoints
+python-multipart==0.0.6
+# Optional: install if using real LSTM forecasts
+# tensorflow==2.17.0
+
+# JWT support for auth
+PyJWT==2.8.0

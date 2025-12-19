@@ -1,0 +1,49 @@
+name: Build and Push Backend Docker Image
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/kisanmitra-backend:latest
+            ghcr.io/${{ github.repository_owner }}/kisanmitra-backend:${{ github.sha }}
+
+      - name: Trigger Render deploy (optional)
+        if: secrets.RENDER_API_KEY && secrets.RENDER_SERVICE_ID
+        run: |
+          echo "Triggering Render deploy for service $RENDER_SERVICE_ID"
+          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json" \
+            -d '{}'
