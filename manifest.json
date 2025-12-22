@@ -1,6 +1,6 @@
 {
-  "name": "Kisan-Mitra",
-  "short_name": "KisanMitra",
+  "name": "KisanBuddy",
+  "short_name": "KisanBuddy",
   "description": "Pan-India Multimodal Agricultural PWA",
   "start_url": "./",
   "display": "standalone",

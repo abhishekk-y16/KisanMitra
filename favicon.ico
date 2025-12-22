@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Simple SVG used as a development favicon; served at /favicon.ico -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="10" ry="10" fill="#1f7a1f" />
+  <text x="50%" y="52%" font-family="Arial, Helvetica, sans-serif" font-size="30" fill="#fff" text-anchor="middle" alignment-baseline="middle">KM</text>
+</svg>
