@@ -1,4 +1,4 @@
-# 🌾 Kisan-Mitra (किसान मित्र)
+# 🌾 KisanBuddy (किसान मित्र)
 
 **Pan-India Multimodal Agricultural PWA** — A high-availability, error-resilient agentic web ecosystem for Indian farmers.
 
@@ -17,7 +17,7 @@ Kisan-Mitra employs a **Planner-Executor-Validator** architecture with specialis
 ## 📁 Project Structure
 
 ```
-KisanMitra/
+KisanBuddy/
 ├── backend/                    # FastAPI + Vertex AI Agent Engine
 │   ├── main.py                 # API endpoints
 │   ├── agents/
@@ -165,9 +165,9 @@ npm test
 ```
 
 ### Build for Production
-```bash
+# ```bash
 # Backend: Containerize
-docker build -t kisan-mitra-api ./backend
+docker build -t kisan-buddy-api ./backend
 
 # Frontend: Static export
 cd frontend

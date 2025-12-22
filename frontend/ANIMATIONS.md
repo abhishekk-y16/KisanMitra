@@ -10,7 +10,7 @@ Global Motion Tokens
 
 Key Animations
 - Section entrance: Fade + Slide Up
-  - Duration: `--transition-slow` (350ms)
+  - 
   - Easing: cubic-bezier(0.16,1,0.3,1)
   - CSS: `animate-fade-in-up` / `@keyframes fadeInUp`
 

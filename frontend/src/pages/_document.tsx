@@ -19,11 +19,11 @@ export default function Document() {
         <link rel="icon" type="image/png" href="/favicon.png" />
 
         {/* Meta */}
-        <meta name="description" content="Kisan-Mitra: Your intelligent farming companion for crop diagnosis, market prices, and weather alerts" />
-        <meta name="application-name" content="Kisan-Mitra" />
+        <meta name="description" content="KisanBuddy: Your intelligent farming companion for crop diagnosis, market prices, and weather alerts" />
+        <meta name="application-name" content="KisanBuddy" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Kisan-Mitra" />
+        <meta name="apple-mobile-web-app-title" content="KisanBuddy" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
       </Head>

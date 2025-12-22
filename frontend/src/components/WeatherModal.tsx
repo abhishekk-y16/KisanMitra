@@ -51,7 +51,7 @@ export function WeatherModal({ onClose, inline = false }: WeatherModalProps) {
         }
         try {
           const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${location.lat}&lon=${location.lng}`;
-          const res = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': 'KisanMitra/1.0 (dev)' } });
+          const res = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': 'KisanBuddy/1.0 (dev)' } });
           if (!mounted) return;
           if (!res.ok) {
             setPlaceName(null);

@@ -4,13 +4,6 @@ Overview
 - Purpose: Desktop‑first premium UI for `Diagnostic` (1440px+), ready for developer handoff.
 - Files: Use the color, spacing and typography tokens in `design-tokens.json`.
 
-Artboards / Frames
-- 1440px Desktop Frame (Primary)
-  - Width: 1440px; Grid: 12 columns, 24px gutter, 120px side margins (page gutter token)
-  - Top nav (height 92px) — left: logo, center: page title, right: actions (upload, account)
-  - Hero area: left column (5 cols) — capture panel; right columns (7 cols) — live preview + contextual CTA
-  - Below: two-column content — left: results stack (cards, symptoms, treatment); right: quick tips, history, CTAs
-
 Tokens
 - Colors: map from `design-tokens.json` (primary, secondary, neutral, semantic)
 - Type: Heading scale (H1 48/56, H2 32/40, H3 20/28), Body (16/24), Caption (13/18)

@@ -1,5 +1,5 @@
 /**
- * Kisan-Mitra Sync Engine
+ * KisanBuddy Sync Engine
  * Offline-first IndexedDB with AES-256 encryption and exponential backoff sync.
  * 
  * Schema includes:
@@ -12,7 +12,7 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
 // AES-256 encryption utilities using Web Crypto API
-const ENCRYPTION_KEY_NAME = 'kisan-mitra-aes-key';
+const ENCRYPTION_KEY_NAME = 'kisan-buddy-aes-key';
 
 async function getOrCreateEncryptionKey(): Promise<CryptoKey> {
   const stored = localStorage.getItem(ENCRYPTION_KEY_NAME);
@@ -79,7 +79,7 @@ async function decryptData(encrypted: string): Promise<string> {
 }
 
 // Database schema
-interface KisanMitraDB extends DBSchema {
+interface KisanBuddyDB extends DBSchema {
   diagnoses: {
     key: string;
     value: {
@@ -128,12 +128,12 @@ interface KisanMitraDB extends DBSchema {
   };
 }
 
-let dbInstance: IDBPDatabase<KisanMitraDB> | null = null;
+let dbInstance: IDBPDatabase<KisanBuddyDB> | null = null;
 
-async function getDB(): Promise<IDBPDatabase<KisanMitraDB>> {
+async function getDB(): Promise<IDBPDatabase<KisanBuddyDB>> {
   if (dbInstance) return dbInstance;
   
-  dbInstance = await openDB<KisanMitraDB>('kisan-mitra-db', 1, {
+  dbInstance = await openDB<KisanBuddyDB>('kisan-buddy-db', 1, {
     upgrade(db) {
       // Diagnoses store
       const diagnosesStore = db.createObjectStore('diagnoses', { keyPath: 'id' });

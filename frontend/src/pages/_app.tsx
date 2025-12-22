@@ -31,7 +31,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="theme-color" content="#2E7D32" />
         <link rel="manifest" href={`${basePath || ''}/manifest.json`} />
         <link rel="apple-touch-icon" href={`${basePath || ''}/icons/icon-192x192.png`} />
-        <title>Kisan-Mitra | किसान मित्र</title>
+        <title>KisanBuddy | किसान मित्र</title>
       </Head>
       {isOffline && (
         <div className="offline-banner">

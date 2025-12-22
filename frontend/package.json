@@ -1,7 +1,7 @@
 {
-  "name": "kisan-mitra-frontend",
+  "name": "kisan-buddy-frontend",
   "version": "0.1.0",
-  "homepage": "https://abhishekk-y16.github.io/KisanMitra/",
+  "homepage": "https://abhishekk-y16.github.io/KisanBuddy/",
   "private": true,
   "scripts": {
     "dev": "next dev",

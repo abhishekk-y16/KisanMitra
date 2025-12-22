@@ -1,11 +1,11 @@
-# Kisan-Mitra Security Configuration
+# KisanBuddy Security Configuration
 # VPC Service Controls and Security Guidelines
 
 ## VPC-SC Ingress Rules (terraform/gcloud)
 
-# Create a service perimeter for Kisan-Mitra
-# gcloud access-context-manager perimeters create kisan-mitra-perimeter \
-#   --title="Kisan-Mitra Security Perimeter" \
+# Create a service perimeter for KisanBuddy
+# gcloud access-context-manager perimeters create kisan-buddy-perimeter \
+#   --title="KisanBuddy Security Perimeter" \
 #   --resources=projects/<PROJECT_NUMBER> \
 #   --restricted-services=storage.googleapis.com,aiplatform.googleapis.com \
 #   --policy=<POLICY_ID>
@@ -57,8 +57,8 @@ EARTH_ENGINE_SERVICE_ACCOUNT=<service-account-json-path>
 CIBRC_RAG_INDEX=<vertex-ai-search-index-id>
 
 # Frontend (.env.local)
-NEXT_PUBLIC_API_URL=https://api.kisanmitra.in
-NEXT_PUBLIC_INDICTRANS_API=https://indictrans.kisanmitra.in/translate
+NEXT_PUBLIC_API_URL=https://api.kisanbuddy.in
+NEXT_PUBLIC_INDICTRANS_API=https://indictrans.kisanbuddy.in/translate
 
 ## Data Encryption at Rest
 
