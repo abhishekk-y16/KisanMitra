@@ -14,6 +14,10 @@ export default function Document() {
           rel="stylesheet"
         />
         
+        {/* Icons */}
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
+
         {/* Meta */}
         <meta name="description" content="Kisan-Mitra: Your intelligent farming companion for crop diagnosis, market prices, and weather alerts" />
         <meta name="application-name" content="Kisan-Mitra" />

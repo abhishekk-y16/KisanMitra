@@ -1,4 +1,5 @@
 import { forwardRef, HTMLAttributes, ReactNode } from 'react';
+import mergeClasses from '../../lib/mergeClasses';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'elevated' | 'outlined' | 'glass';
@@ -61,14 +62,14 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`
-          ${baseStyles}
-          ${variants[variant]}
-          ${paddings[padding]}
-          ${hoverStyles}
-          ${selectedStyles}
-          ${className}
-        `}
+        className={mergeClasses(
+          baseStyles,
+          variants[variant],
+          paddings[padding],
+          hoverStyles,
+          selectedStyles,
+          className
+        )}
         {...props}
       >
         {children}

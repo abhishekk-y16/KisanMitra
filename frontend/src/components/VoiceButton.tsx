@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import mergeClasses from '../lib/mergeClasses';
 
 interface VoiceButtonProps {
   onResult: (transcript: string) => void;
@@ -112,7 +113,7 @@ export function VoiceButton({
   return (
     <button
       onClick={toggleListening}
-      className={`${baseClasses} ${variantClasses[variant]}`}
+      className={mergeClasses(baseClasses, variantClasses[variant])}
       aria-label={isListening ? 'Stop listening' : 'Start voice input'}
       aria-pressed={isListening}
     >

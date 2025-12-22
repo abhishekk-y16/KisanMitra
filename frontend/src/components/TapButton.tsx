@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import mergeClasses from '../lib/mergeClasses';
 
 interface TapButtonProps {
   icon: string | ReactNode;
@@ -13,17 +14,17 @@ interface TapButtonProps {
   onClick: () => void;
 }
 
-export function TapButton({ 
-  icon, 
-  label, 
-  sublabel, 
+export function TapButton({
+  icon,
+  label,
+  sublabel,
   description,
   badge,
-  small, 
+  small,
   variant = 'default',
   disabled = false,
   loading = false,
-  onClick 
+  onClick,
 }: TapButtonProps) {
   const variantStyles = {
     default: 'hover:border-neutral-300 hover:bg-neutral-50',
@@ -44,36 +45,53 @@ export function TapButton({
       <button
         onClick={onClick}
         disabled={disabled || loading}
-        className={`
-          group relative
-          min-h-[72px] min-w-[72px]
-          p-3
-          flex flex-col items-center justify-center gap-1.5
-          bg-white border border-neutral-200 rounded-2xl
-          transition-all duration-200
-          hover:border-neutral-300 hover:shadow-md hover:-translate-y-0.5
-          active:scale-[0.98]
-          disabled:opacity-50 disabled:pointer-events-none
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
-        `}
+        className={mergeClasses(
+          'group relative',
+          'min-h-[72px] min-w-[72px]',
+          'p-3',
+          'flex flex-col items-center justify-center gap-1.5',
+          'bg-white border border-neutral-200 rounded-2xl',
+          'transition-all duration-200',
+          'hover:border-neutral-300 hover:shadow-md hover:-translate-y-0.5',
+          'active:scale-[0.98]',
+          'disabled:opacity-50 disabled:pointer-events-none',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2'
+        )}
       >
-        <span className={`
-          w-10 h-10 flex items-center justify-center
-          rounded-xl text-xl
-          ${iconBgStyles[variant]}
-          transition-colors duration-200
-        `}>
+        <span
+          className={mergeClasses(
+            'w-10 h-10 flex items-center justify-center',
+            'rounded-xl text-xl',
+            iconBgStyles[variant],
+            'transition-colors duration-200'
+          )}
+        >
           {loading ? (
-            <svg className="w-5 h-5 animate-spin text-current" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <svg
+              className="w-5 h-5 animate-spin text-current"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
-          ) : icon}
+          ) : (
+            icon
+          )}
         </span>
         <span className="text-xs font-medium text-neutral-700">{label}</span>
-        {sublabel && (
-          <span className="text-[10px] text-neutral-400">{sublabel}</span>
-        )}
+        {sublabel && <span className="text-[10px] text-neutral-400">{sublabel}</span>}
       </button>
     );
   }
@@ -82,34 +100,53 @@ export function TapButton({
     <button
       onClick={onClick}
       disabled={disabled || loading}
-      className={`
-        group relative w-full
-        p-5
-        flex items-start gap-4
-        bg-white border border-neutral-200 rounded-2xl
-        text-left
-        transition-all duration-200
-        ${variantStyles[variant]}
-        hover:shadow-lg hover:-translate-y-0.5
-        active:scale-[0.99]
-        disabled:opacity-50 disabled:pointer-events-none
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
-      `}
+      className={mergeClasses(
+        'group relative w-full',
+        'p-5',
+        'flex items-start gap-4',
+        'bg-white border border-neutral-200 rounded-2xl',
+        'text-left',
+        'transition-all duration-200',
+        variantStyles[variant],
+        'hover:shadow-lg hover:-translate-y-0.5',
+        'active:scale-[0.99]',
+        'disabled:opacity-50 disabled:pointer-events-none',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2'
+      )}
     >
       {/* Icon Container */}
-      <div className={`
-        flex-shrink-0
-        w-14 h-14 flex items-center justify-center
-        rounded-2xl text-2xl
-        ${iconBgStyles[variant]}
-        transition-colors duration-200
-      `}>
+      <div
+        className={mergeClasses(
+          'flex-shrink-0',
+          'w-14 h-14 flex items-center justify-center',
+          'rounded-2xl text-2xl',
+          iconBgStyles[variant],
+          'transition-colors duration-200'
+        )}
+      >
         {loading ? (
-          <svg className="w-6 h-6 animate-spin text-current" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          <svg
+            className="w-6 h-6 animate-spin text-current"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
-        ) : icon}
+        ) : (
+          icon
+        )}
       </div>
 
       {/* Text Content */}
@@ -122,9 +159,7 @@ export function TapButton({
             </span>
           )}
         </div>
-        {sublabel && (
-          <p className="text-sm text-neutral-500 mt-0.5">{sublabel}</p>
-        )}
+        {sublabel && <p className="text-sm text-neutral-500 mt-0.5">{sublabel}</p>}
         {description && (
           <p className="text-sm text-neutral-400 mt-1.5 line-clamp-2">{description}</p>
         )}
@@ -132,10 +167,10 @@ export function TapButton({
 
       {/* Arrow indicator */}
       <div className="flex-shrink-0 self-center">
-        <svg 
-          className="w-5 h-5 text-neutral-400 group-hover:text-neutral-600 group-hover:translate-x-0.5 transition-all duration-200" 
-          fill="none" 
-          viewBox="0 0 24 24" 
+        <svg
+          className="w-5 h-5 text-neutral-400 group-hover:text-neutral-600 group-hover:translate-x-0.5 transition-all duration-200"
+          fill="none"
+          viewBox="0 0 24 24"
           stroke="currentColor"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

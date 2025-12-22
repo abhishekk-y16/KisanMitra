@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import mergeClasses from '../../lib/mergeClasses';
 
 interface AlertProps {
   variant?: 'info' | 'success' | 'warning' | 'error';
@@ -56,12 +57,12 @@ export function Alert({
 
   return (
     <div
-      className={`
-        flex items-start gap-3 p-4 rounded-xl border
-        animate-fade-in-up
-        ${variants[variant]}
-        ${className}
-      `}
+      className={mergeClasses(
+        'flex items-start gap-3 p-4 rounded-xl border',
+        'animate-fade-in-up',
+        variants[variant],
+        className
+      )}
       role="alert"
     >
       <span className={`flex-shrink-0 ${iconColors[variant]}`}>

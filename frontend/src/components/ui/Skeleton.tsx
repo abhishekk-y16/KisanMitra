@@ -9,6 +9,8 @@ interface SkeletonTextProps {
   lines?: number;
 }
 
+import mergeClasses from '../../lib/mergeClasses';
+
 function SkeletonBase({
   variant = 'text',
   width,
@@ -36,7 +38,7 @@ function SkeletonBase({
 
   return (
     <div
-      className={`${baseStyles} ${variants[variant]} ${className}`}
+      className={mergeClasses(baseStyles, variants[variant], className)}
       style={style}
       role="status"
       aria-label="Loading..."

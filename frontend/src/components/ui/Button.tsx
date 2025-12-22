@@ -1,4 +1,5 @@
 import React, { forwardRef, ButtonHTMLAttributes, ReactNode } from 'react';
+import mergeClasses from '../../lib/mergeClasses';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
@@ -79,13 +80,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        className={`
-          ${baseStyles}
-          ${variants[variant]}
-          ${sizes[size]}
-          ${fullWidth ? 'w-full' : ''}
-          ${className}
-        `}
+        className={mergeClasses(
+          baseStyles,
+          variants[variant],
+          sizes[size],
+          fullWidth ? 'w-full' : '',
+          className
+        )}
         disabled={disabled || loading}
         {...props}
       >

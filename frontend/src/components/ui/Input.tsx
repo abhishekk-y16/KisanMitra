@@ -5,9 +5,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   className?: string;
 }
 
+import mergeClasses from '../../lib/mergeClasses';
+
 const Input = forwardRef<HTMLInputElement, InputProps>(({ label, className = '', ...props }, ref) => {
   return (
-    <div className={`flex flex-col ${className}`}>
+    <div className={mergeClasses('flex flex-col', className)}>
       {label && <label className="text-sm text-neutral-700 mb-1">{label}</label>}
       <input ref={ref} className="border rounded-md px-3 py-2 text-sm bg-white" {...props} />
     </div>

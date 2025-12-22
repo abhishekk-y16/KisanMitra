@@ -1,130 +1,36 @@
 {
   "polyfillFiles": [
-    "static/chunks/polyfills-42372ed130431b0a.js"
+    "static/chunks/polyfills.js"
   ],
-  "devFiles": [],
+  "devFiles": [
+    "static/chunks/react-refresh.js"
+  ],
   "ampDevFiles": [],
   "lowPriorityFiles": [
-    "static/HF-GvouIXWP91vvrsEFe4/_buildManifest.js",
-    "static/HF-GvouIXWP91vvrsEFe4/_ssgManifest.js"
+    "static/development/_buildManifest.js",
+    "static/development/_ssgManifest.js"
   ],
   "rootMainFiles": [],
   "pages": {
     "/": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/878-f5d26fa6e77bf27e.js",
-      "static/chunks/466-77e39f59786b9eba.js",
-      "static/chunks/869-e39025fe855d54ba.js",
-      "static/chunks/247-decc918de0c7eaec.js",
-      "static/chunks/pages/index-41a3cc6870bdec4c.js"
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/index.js"
     ],
     "/_app": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/css/94dfa92d6d8e0ae0.css",
-      "static/chunks/pages/_app-eeb9bce4b0663ef4.js"
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/_app.js"
     ],
     "/_error": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/pages/_error-7a92967bea80186d.js"
-    ],
-    "/analytics": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/pages/analytics-64a7906ef126b5d9.js"
-    ],
-    "/chat": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/878-f5d26fa6e77bf27e.js",
-      "static/chunks/pages/chat-5abdfb208edacccd.js"
-    ],
-    "/diagnostic": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/878-f5d26fa6e77bf27e.js",
-      "static/chunks/466-77e39f59786b9eba.js",
-      "static/chunks/pages/diagnostic-1705e219c92cf3fe.js"
-    ],
-    "/help": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/pages/help-4d8afad5d9b11b02.js"
-    ],
-    "/insecticides": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/pages/insecticides-07b05a93cf96a82c.js"
-    ],
-    "/login": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/878-f5d26fa6e77bf27e.js",
-      "static/chunks/pages/login-024e05d6cf047e0b.js"
-    ],
-    "/market": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/878-f5d26fa6e77bf27e.js",
-      "static/chunks/247-decc918de0c7eaec.js",
-      "static/chunks/pages/market-95215317494ee472.js"
-    ],
-    "/my-farm": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/pages/my-farm-4984459eb7dc9d94.js"
-    ],
-    "/my-fields": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/pages/my-fields-6510ff907efbb87a.js"
-    ],
-    "/pesticides": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/pages/pesticides-485208ff49735d44.js"
-    ],
-    "/register": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/878-f5d26fa6e77bf27e.js",
-      "static/chunks/pages/register-9faaf86eca5d21b4.js"
-    ],
-    "/saved": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/pages/saved-8f20810679167088.js"
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/_error.js"
     ],
     "/soil-test": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/pages/soil-test-ab7e616ef3bc9a5d.js"
-    ],
-    "/weather": [
-      "static/chunks/webpack-cf5eb7df305ab593.js",
-      "static/chunks/framework-64ad27b21261a9ce.js",
-      "static/chunks/main-ac8c5342a300ac9e.js",
-      "static/chunks/878-f5d26fa6e77bf27e.js",
-      "static/chunks/869-e39025fe855d54ba.js",
-      "static/chunks/pages/weather-735616e2d189f3cd.js"
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/soil-test.js"
     ]
   },
   "ampFirstPages": []

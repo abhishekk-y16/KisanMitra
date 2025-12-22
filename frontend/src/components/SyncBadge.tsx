@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import mergeClasses from '../lib/mergeClasses';
 
 interface SyncBadgeProps {
   status: 'synced' | 'pending' | 'error' | 'offline';
@@ -100,16 +101,16 @@ export function SyncBadge({
   };
 
   return (
-    <span 
-      className={`
-        inline-flex items-center
-        ${sizeClasses[size]}
-        ${config.bg} ${config.border} ${config.text}
-        border rounded-full
-        font-medium
-        transition-all duration-300
-        ${isAnimating ? 'scale-110' : 'scale-100'}
-      `}
+    <span
+      className={mergeClasses(
+        'inline-flex items-center',
+        sizeClasses[size],
+        config.bg,
+        config.border,
+        config.text,
+        'border rounded-full font-medium transition-all duration-300',
+        isAnimating ? 'scale-110' : 'scale-100'
+      )}
       role="status"
       aria-live="polite"
     >

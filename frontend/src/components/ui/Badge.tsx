@@ -9,6 +9,8 @@ interface BadgeProps {
   children: ReactNode;
 }
 
+import mergeClasses from '../../lib/mergeClasses';
+
 export function Badge({
   variant = 'primary',
   size = 'md',
@@ -44,13 +46,13 @@ export function Badge({
 
   return (
     <span
-      className={`
-        inline-flex items-center gap-1.5 
-        font-semibold rounded-full border
-        ${variants[variant]}
-        ${sizes[size]}
-        ${className}
-      `}
+      className={mergeClasses(
+        'inline-flex items-center gap-1.5',
+        'font-semibold rounded-full border',
+        variants[variant],
+        sizes[size],
+        className
+      )}
     >
       {dot && (
         <span className={`w-1.5 h-1.5 rounded-full ${dotColors[variant]}`} />

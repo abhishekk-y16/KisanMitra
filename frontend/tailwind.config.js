@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+const tokenExt = require('./tailwind.tokens.js').theme?.extend || {};
+
 module.exports = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -7,7 +9,13 @@ module.exports = {
   ],
   theme: {
     extend: {
+      ...tokenExt,
       colors: {
+        // Elite neutrals + tokenized palette
+        elite: {
+          900: '#0B0F14',
+          700: '#263238',
+        },
         // Primary - Fresh Green
         primary: {
           50: '#E8F5E9',
@@ -70,6 +78,7 @@ module.exports = {
         'float': 'float 3s ease-in-out infinite',
         'shimmer': 'shimmer 1.5s infinite linear',
       },
+      // Token-driven colors from design-tokens.json are merged above.
     },
   },
   plugins: [],

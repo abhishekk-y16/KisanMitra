@@ -1,1 +1,8 @@
-{"/_app":"pages/_app.js","/_error":"pages/_error.js","/_document":"pages/_document.js","/analytics":"pages/analytics.html","/diagnostic":"pages/diagnostic.html","/":"pages/index.html","/login":"pages/login.html","/insecticides":"pages/insecticides.html","/market":"pages/market.html","/my-farm":"pages/my-farm.html","/chat":"pages/chat.html","/help":"pages/help.html","/pesticides":"pages/pesticides.html","/register":"pages/register.html","/my-fields":"pages/my-fields.html","/soil-test":"pages/soil-test.html","/weather":"pages/weather.html","/saved":"pages/saved.html","/404":"pages/404.html"}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/": "pages/index.js",
+  "/market": "pages/market.js",
+  "/soil-test": "pages/soil-test.js"
+}

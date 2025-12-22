@@ -17,7 +17,9 @@ interface WeatherModalProps {
 
 export function WeatherModal({ onClose, inline = false }: WeatherModalProps) {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [placeName, setPlaceName] = useState<string | null>(null);
   const [hazards, setHazards] = useState<HazardData | null>(null);
+  const [forecast, setForecast] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState(false);
@@ -39,22 +41,70 @@ export function WeatherModal({ onClose, inline = false }: WeatherModalProps) {
     }
   }, []);
 
+    // Reverse geocode to a human-readable place name using Nominatim (OpenStreetMap)
+    useEffect(() => {
+      let mounted = true;
+      async function fetchPlaceName() {
+        if (!location) {
+          setPlaceName(null);
+          return;
+        }
+        try {
+          const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${location.lat}&lon=${location.lng}`;
+          const res = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': 'KisanMitra/1.0 (dev)' } });
+          if (!mounted) return;
+          if (!res.ok) {
+            setPlaceName(null);
+            return;
+          }
+          const data = await res.json();
+          const display = data.display_name || data.name || null;
+          setPlaceName(display);
+        } catch (e) {
+          setPlaceName(null);
+        }
+      }
+      fetchPlaceName();
+      return () => { mounted = false; };
+    }, [location]);
+
   const fetchHazards = useCallback(async () => {
     if (!location) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/earth_engine_hazards`, {
+      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+      // Fetch Earth Engine hazards (satellite-derived)
+      const resHaz = await fetch(`${base}/api/earth_engine_hazards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ location }),
       });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
-      setHazards(data);
+      if (resHaz.ok) {
+        const data = await resHaz.json();
+        setHazards(data);
+      } else {
+        // Keep non-fatal: show message but continue to fetch forecast
+        const txt = await resHaz.text();
+        console.warn('Earth Engine hazards fetch failed:', resHaz.status, txt);
+      }
+
+      // Fetch meteorological forecast (OpenWeatherMap / configured backend)
+      const resF = await fetch(`${base}/api/weather_forecast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location }),
+      });
+      if (!resF.ok) {
+        const body = await resF.text();
+        throw new Error(`Server error fetching forecast: ${resF.status} ${body}`);
+      }
+      const fdata = await resF.json();
+      setForecast(fdata.forecast || fdata);
     } catch (err) {
       console.error('Failed to fetch hazards:', err);
-      setError('Could not fetch weather data. Please try again.');
+      setError(err instanceof Error ? err.message : 'Could not fetch weather data. Please try again.');
     }
     setLoading(false);
   }, [location]);
@@ -68,6 +118,41 @@ export function WeatherModal({ onClose, inline = false }: WeatherModalProps) {
     if (risk < 0.5) return { label: 'Medium', labelHi: 'मध्यम', variant: 'warning', description: 'Monitor conditions closely' };
     return { label: 'High', labelHi: 'उच्च', variant: 'error', description: 'Take precautionary measures' };
   };
+
+  const safeNumber = (v: any, fallback: number | null = null) => {
+    if (v === null || v === undefined) return fallback;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  const currentTempDisplay = (f: any) => {
+    const t = safeNumber(f?.current?.temp, null);
+    return t === null ? '—' : `${Math.round(t)}°C`;
+  };
+
+  const currentSummary = (f: any) => {
+    if (!f?.current) return '';
+    const temp = safeNumber(f.current.temp, null);
+    const feels = safeNumber(f.current.feels_like, null);
+    const hum = safeNumber(f.current.humidity, null);
+    const wind = safeNumber(f.current.wind_speed, null);
+    const desc = f.current.weather?.[0]?.description || '';
+    const parts: string[] = [];
+    if (temp !== null) parts.push(`${Math.round(temp)}°C`);
+    if (desc) parts.push(desc);
+    if (feels !== null) parts.push(`Feels like ${Math.round(feels)}°C`);
+    if (hum !== null) parts.push(`Humidity: ${hum}%`);
+    if (wind !== null) parts.push(`Wind: ${Math.round(wind)} m/s`);
+    return parts.join(' • ');
+  };
+
+  function formatCoord(value: number, type: 'lat' | 'lng') {
+    if (value === null || value === undefined) return '—';
+    const abs = Math.abs(Number(value));
+    const deg = abs.toFixed(4);
+    if (type === 'lat') return `${deg}°${value >= 0 ? 'N' : 'S'}`;
+    return `${deg}°${value >= 0 ? 'E' : 'W'}`;
+  }
 
   const RiskCard = ({ icon, label, labelHi, risk, gradient }: { icon: string; label: string; labelHi: string; risk: number; gradient: string }) => {
     const level = getRiskLevel(risk as number) as any;
@@ -158,7 +243,15 @@ export function WeatherModal({ onClose, inline = false }: WeatherModalProps) {
               <svg className="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               </svg>
-              <span>{location.lat.toFixed(4)}°N, {location.lng.toFixed(4)}°E</span>
+              <div>
+                <div className="font-medium text-neutral-800">
+                  {placeName ? `${placeName} — ` : ''}
+                  {formatCoord(location.lat, 'lat')}, {formatCoord(location.lng, 'lng')}
+                </div>
+                {forecast && (
+                  <div className="text-xs text-neutral-500">{currentSummary(forecast)}</div>
+                )}
+              </div>
               <Badge variant="secondary" size="sm" className="ml-auto">14-day forecast</Badge>
             </div>
           )}
@@ -186,6 +279,21 @@ export function WeatherModal({ onClose, inline = false }: WeatherModalProps) {
           <div className="flex items-center justify-end">
             <Button variant="ghost" size="sm" onClick={() => setShowWhy(true)}>Why am I seeing this?</Button>
           </div>
+
+          {forecast && (
+            <Card className="mt-4">
+              <div className="p-4">
+                <h4 className="font-semibold mb-2">Current Conditions</h4>
+                <div className="flex items-center gap-4">
+                  <div className="text-3xl">{currentTempDisplay(forecast)}</div>
+                  <div>
+                    <div className="text-sm text-neutral-600">{safeNumber(forecast?.current?.feels_like) !== null ? `Feels like ${Math.round(Number(forecast.current.feels_like))}°C` : ''}</div>
+                    <div className="text-xs text-neutral-500">{safeNumber(forecast?.current?.humidity) !== null ? `Humidity: ${Math.round(Number(forecast.current.humidity))}%` : ''}{safeNumber(forecast?.current?.wind_speed) !== null ? ` • Wind: ${Math.round(Number(forecast.current.wind_speed))} m/s` : ''}</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
 
           <RiskCard icon="🌊" label="Flood Risk" labelHi="बाढ़ जोखिम" risk={hazards.flood_risk} gradient="bg-gradient-to-br from-blue-100 to-cyan-100" />
           <RiskCard icon="☀️" label="Drought Risk" labelHi="सूखा जोखिम" risk={hazards.drought_risk} gradient="bg-gradient-to-br from-orange-100 to-yellow-100" />

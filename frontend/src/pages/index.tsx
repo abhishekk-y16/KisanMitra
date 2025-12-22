@@ -54,38 +54,29 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* Desktop Header / Navbar */}
-      <header className="sticky top-0 z-40 bg-white border-b border-neutral-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-neutral-100 shadow-sm">
+        <div className="max-w-[1440px] mx-auto px-8">
+          <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
-                <span className="text-xl">🌾</span>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-elite-700 to-primary-600 flex items-center justify-center shadow-xl">
+                <span className="text-2xl">🌾</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-neutral-900">Kisan Mitra</h1>
-                <p className="text-xs text-neutral-500">किसान मित्र | Your Agricultural Assistant</p>
+                <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">Kisan Mitra</h1>
+                <p className="text-xs text-neutral-500">किसान मित्र — Agricultural intelligence</p>
               </div>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
-              <button 
-                onClick={() => router.push('/diagnostic')}
-                className="px-4 py-2 text-sm font-medium text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-              >
+            <nav className="hidden lg:flex items-center gap-3">
+              <button onClick={() => router.push('/diagnostic')} className="px-4 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 hover:bg-primary-50 rounded-lg transition">
                 Crop Health
               </button>
-              <button 
-                onClick={() => setActiveModal('market')}
-                className="px-4 py-2 text-sm font-medium text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-              >
+              <button onClick={() => setActiveModal('market')} className="px-4 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 hover:bg-emerald-50 rounded-lg transition">
                 Market Prices
               </button>
-              <button 
-                onClick={() => router.push('/weather')}
-                className="px-4 py-2 text-sm font-medium text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-              >
+              <button onClick={() => router.push('/weather')} className="px-4 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 hover:bg-amber-50 rounded-lg transition">
                 Weather
               </button>
             </nav>
@@ -93,58 +84,66 @@ export default function Home() {
             {/* Right side actions */}
             <div className="flex items-center gap-4">
               <SyncBadge status={syncStatus} size="md" />
-              <div className="hidden md:flex items-center gap-2">
-                <VoiceButton 
-                  onResult={handleVoiceResult} 
-                  onListeningChange={setIsListening}
-                  size="sm"
-                />
-                {isListening && (
-                  <span className="text-xs font-medium text-red-600 animate-pulse">Listening...</span>
-                )}
+              <div className="hidden lg:flex items-center gap-3">
+                <VoiceButton onResult={handleVoiceResult} onListeningChange={setIsListening} size="sm" />
+                {isListening && <span className="text-xs font-medium text-red-600 animate-pulse">Listening...</span>}
               </div>
-              <button
-                onClick={() => router.push('/chat')}
-                className="px-3 py-1 rounded-md bg-primary-50 text-primary-700 hover:bg-primary-100 text-sm"
-                aria-label="Open chat"
-              >
-                Chat
-              </button>
+              <button onClick={() => router.push('/chat')} className="px-4 py-2 rounded-xl bg-white border border-neutral-100 shadow-sm hover:shadow-md text-sm">Chat</button>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
-        {/* Welcome Banner */}
-        <section className="mb-8">
-          <div className="bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 rounded-2xl p-8 text-white shadow-xl shadow-primary-500/20">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div>
-                <h2 className="text-3xl font-bold mb-2">{greeting}, Farmer! 👋</h2>
-                <p className="text-primary-100 text-lg">
-                  Welcome to your agricultural dashboard. 
-                  <span className="block text-sm mt-1 opacity-80">आज आप क्या करना चाहेंगे?</span>
-                </p>
-              </div>
-              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                <div className="text-center">
-                  <span className="block text-3xl font-bold">3</span>
-                  <span className="text-xs text-primary-100">Active Alerts</span>
+      <main className="max-w-[1440px] mx-auto px-8 py-12">
+        {/* Hero: Desktop-first 12-column layout */}
+        <section className="mb-10">
+          <div className="grid grid-cols-12 gap-8 items-start">
+            <div className="col-span-7">
+              <div className="rounded-3xl p-10 bg-white glass card-hover shadow-xl animate-fade-in-up">
+                <div className="flex items-start gap-6">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary-600 to-primary-500 flex items-center justify-center shadow-2xl">
+                    <span className="text-3xl">🌿</span>
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-4xl font-extrabold text-neutral-900 mb-2">{greeting}, Farmer.</h2>
+                    <p className="text-lg text-neutral-600 mb-4">High‑quality crop diagnostics, mandi insights, and weather risk — all in one place.</p>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => router.push('/diagnostic')} className="btn btn-primary btn-lg">Scan a Leaf</button>
+                      <button onClick={() => router.push('/market')} className="btn btn-secondary btn-lg">View Mandi Prices</button>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-px h-10 bg-white/20" />
-                <div className="text-center">
-                  <span className="block text-3xl font-bold">₹2,450</span>
-                  <span className="text-xs text-primary-100">Wheat/q</span>
-                </div>
-                <div className="w-px h-10 bg-white/20" />
-                <div className="text-center">
-                  <span className="block text-3xl font-bold">24°C</span>
-                  <span className="text-xs text-primary-100">Today</span>
+                <div className="mt-6 grid grid-cols-3 gap-4">
+                  <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                    <div className="text-sm text-neutral-500">Active Alerts</div>
+                    <div className="text-2xl font-bold">3</div>
+                  </div>
+                  <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                    <div className="text-sm text-neutral-500">Market Price (Wheat/q)</div>
+                    <div className="text-2xl font-bold">₹2,450</div>
+                  </div>
+                  <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                    <div className="text-sm text-neutral-500">Today</div>
+                    <div className="text-2xl font-bold">24°C</div>
+                  </div>
                 </div>
               </div>
             </div>
+            <aside className="col-span-5">
+              <div className="rounded-3xl p-6 bg-gradient-to-br from-neutral-50 to-neutral-0 border border-neutral-100 shadow-lg animate-fade-in-up">
+                <h4 className="text-lg font-semibold text-neutral-900 mb-3">Quick Actions</h4>
+                <div className="grid grid-cols-1 gap-3">
+                  <button onClick={() => router.push('/diagnostic')} className="w-full btn btn-primary">Start Diagnosis</button>
+                  <button onClick={() => setActiveModal('market')} className="w-full btn btn-secondary">Nearby Mandi Prices</button>
+                  <button onClick={() => router.push('/weather')} className="w-full btn btn-ghost">Weather Risks</button>
+                </div>
+                <div className="mt-6">
+                  <h5 className="text-sm font-semibold text-neutral-800 mb-2">Sync Status</h5>
+                  <SyncBadge status={syncStatus} size="md" />
+                </div>
+              </div>
+            </aside>
           </div>
         </section>
 
@@ -331,16 +330,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Modals (legacy) - kept for backward compatibility but unused when navigating to pages */}
-      {activeModal === 'diagnostic' && (
-        <DiagnosticModal onClose={() => setActiveModal(null)} />
-      )}
-      {activeModal === 'market' && (
-        <MarketModal onClose={() => setActiveModal(null)} />
-      )}
-      {activeModal === 'weather' && (
-        <WeatherModal onClose={() => setActiveModal(null)} />
-      )}
+      {/* Legacy modal renders removed — navigation uses dedicated pages now */}
     </div>
   );
 }
