@@ -1,4 +1,4 @@
-# Kisan-Mitra Backend Integration Examples
+# KisanBuddy Backend Integration Examples
 
 This document shows quick `curl` examples for new endpoints implemented for proximity-based mandi lookup, POI, and AgriStack stubs.
 

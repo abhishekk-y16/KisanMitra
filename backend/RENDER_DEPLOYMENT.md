@@ -36,7 +36,7 @@ Steps to deploy the backend service to Render (using the existing `Dockerfile` i
    Additional optional automation (CI):
 
    - You can enable a GitHub Actions workflow to build and push the backend Docker image to GitHub Container Registry (GHCR). A sample workflow is provided at `.github/workflows/backend-docker.yml` which will:
-      - Build the Docker image from the `backend/` folder and push tags `latest` and `${{ github.sha }}` to `ghcr.io/<your-org>/kisanmitra-backend`.
+      - Build the Docker image from the `backend/` folder and push tags `latest` and `${{ github.sha }}` to `ghcr.io/<your-org>/kisanbuddy-backend`.
       - Optionally trigger a Render deploy if you configure two GitHub secrets: `RENDER_API_KEY` and `RENDER_SERVICE_ID`.
 
    GitHub secrets required for full automation:

@@ -4,7 +4,7 @@
 
 ## 🎯 Overview
 
-Kisan-Mitra employs a **Planner-Executor-Validator** architecture with specialist agents to provide:
+KisanBuddy employs a **Planner-Executor-Validator** architecture with specialist agents to provide:
 
 - 🌿 **Crop Disease Diagnosis** — SWIN Transformer with 88% accuracy
 - 💰 **Market Price Intelligence** — Real-time Agmarknet data + 14-day LSTM forecasts

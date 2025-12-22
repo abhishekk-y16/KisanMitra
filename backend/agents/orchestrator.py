@@ -1,5 +1,5 @@
 """
-Lightweight Agent Orchestrator (ReAct-style) for Kisan-Mitra
+Lightweight Agent Orchestrator (ReAct-style) for KisanBuddy
 
 Provides a minimal `AgentOrchestrator` with executor registration
 and an `orchestrate` method that runs planned tasks and returns

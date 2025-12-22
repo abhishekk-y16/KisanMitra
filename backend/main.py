@@ -35,7 +35,7 @@ except Exception:
     from . import auth as auth_module
 from fastapi import Depends, Header
 
-app = FastAPI(title="Kisan-Mitra API", version="0.2.0")
+app = FastAPI(title="KisanBuddy API", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,

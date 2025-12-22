@@ -179,7 +179,7 @@ def _reverse_geocode_state(lat: float, lng: float) -> Optional[str]:
     try:
         url = 'https://nominatim.openstreetmap.org/reverse'
         params = {'format': 'json', 'lat': lat, 'lon': lng, 'zoom': 10, 'addressdetails': 1}
-        with httpx.Client(timeout=10.0, headers={'User-Agent': 'KisanMitra/1.0'}) as client:
+        with httpx.Client(timeout=10.0, headers={'User-Agent': 'KisanBuddy/1.0'}) as client:
             r = client.get(url, params=params)
             r.raise_for_status()
             j = r.json()

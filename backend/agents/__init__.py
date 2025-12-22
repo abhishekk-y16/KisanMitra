@@ -1,4 +1,4 @@
-# Kisan-Mitra Agents
+# KisanBuddy Agents
 """
 Agent module for research-grade agentic AI workflows.
 

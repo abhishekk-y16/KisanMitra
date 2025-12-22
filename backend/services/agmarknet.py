@@ -246,7 +246,7 @@ def geocode_market_osm(market_name: str, state: Optional[str] = None) -> Optiona
         url = "https://nominatim.openstreetmap.org/search"
         params = {"q": q, "format": "json", "limit": 1, "countrycodes": "in"}
         with httpx.Client(timeout=10.0) as client:
-            resp = client.get(url, params=params, headers={"User-Agent": "KisanMitra/1.0 (hackathon)"})
+            resp = client.get(url, params=params, headers={"User-Agent": "KisanBuddy/1.0 (hackathon)"})
             resp.raise_for_status()
             data = resp.json()
             if not data:
