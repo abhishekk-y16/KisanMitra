@@ -1,3 +1,14 @@
+/**
+ * Next.js config for GitHub Pages deployment under repository path /KisanBuddy
+ */
+module.exports = {
+  basePath: '/KisanBuddy',
+  assetPrefix: '/KisanBuddy/',
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
+}
 /** @type {import('next').NextConfig} */
 const withPWA = require('next-pwa')({
   dest: 'public',
