@@ -6,19 +6,15 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development',
 });
 
-// Only use basePath/assetPrefix in production (for GitHub Pages)
-const isProduction = process.env.NODE_ENV === 'production';
+// Decide where we're deploying. For Vercel leave basePath/assetPrefix unset.
+const isGitHubPages = process.env.NEXT_PUBLIC_DEPLOY_TARGET === 'GH_PAGES';
 const repoBase = '/KisanBuddy';
-const basePath = isProduction ? repoBase : '';
-const assetPrefix = isProduction ? `${repoBase}/` : '';
+const basePath = isGitHubPages ? repoBase : '';
+const assetPrefix = isGitHubPages ? `${repoBase}/` : '';
 
 const nextConfig = {
-  // Enable static export for Next.js `output: 'export'` (used by GitHub Pages)
-  output: 'export',
-  // Serve the site from the repository subpath when published to GitHub Pages
-  basePath: basePath,
-  assetPrefix: assetPrefix,
-  trailingSlash: true,
+  // When deploying to GitHub Pages we use static export and repo subpath.
+  ...(isGitHubPages ? { output: 'export', basePath: basePath, assetPrefix: assetPrefix, trailingSlash: true } : {}),
   images: {
     unoptimized: true,
   },
