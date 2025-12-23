@@ -5,7 +5,7 @@
  */
 
 // Resolve API URL with a runtime-local override for development:
-const buildApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://kisanbuddy-coge.onrender.com' || 'http://localhost:8080';
+const buildApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://kisanmitra-coge.onrender.com' || 'http://localhost:8080';
 
 // If running in the browser on localhost, prefer local backend (useful during dev)
 function resolveApiUrl(): string {
@@ -17,7 +17,7 @@ function resolveApiUrl(): string {
   } catch (e) {
     // ignore and fall through
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'https://kisanbuddy-coge.onrender.com';
+  return process.env.NEXT_PUBLIC_API_URL || 'https://kisanmitra-coge.onrender.com';
 }
 
 export const API_URL = resolveApiUrl();
@@ -28,7 +28,7 @@ export function getApiUrl(): string {
     const hostIsLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (hostIsLocal) return 'http://localhost:8080';
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'https://kisanbuddy-coge.onrender.com';
+  return process.env.NEXT_PUBLIC_API_URL || 'https://kisanmitra-coge.onrender.com';
 }
 
 interface ApiResponse<T> {
