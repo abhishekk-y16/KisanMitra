@@ -13,6 +13,12 @@ from .orchestrator import (
     AgentOrchestrator,
     create_orchestrator,
 )
+from .pydantic_ai_agents import (
+    SoilCropSuitabilityAgent,
+    DiseasePredictionAgent,
+    PesticideSafetyAgent,
+    IntegratedFarmingAgent,
+)
 
 __all__ = [
     'plan_tasks',
@@ -21,4 +27,8 @@ __all__ = [
     'CIBRC_REGISTRY',
     'AgentOrchestrator',
     'create_orchestrator',
+    'SoilCropSuitabilityAgent',
+    'DiseasePredictionAgent',
+    'PesticideSafetyAgent',
+    'IntegratedFarmingAgent',
 ]

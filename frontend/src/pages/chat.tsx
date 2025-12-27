@@ -42,48 +42,7 @@ export default function ChatPage() {
   useEffect(() => {
     // read any prefill from diagnostic
     try {
-      const raw = sessionStorage.getItem('chat_prefill');
-      if (raw) {
-        const pref = JSON.parse(raw);
-        // if there's an image url or base64, show preview and auto-send a vision chat
-        if (pref.imageUrl || pref.imageBase64) {
-          setImagePreview(pref.imageUrl || pref.imageBase64 || null);
-          // compose message
-          const chatMessage = (pref.transcript ? pref.transcript + '\n\n' : '') + 'Please analyze the attached image and provide diagnosis and recommended treatment steps.';
-          // auto-send vision-enabled request (do not insert the helper prompt into chat history)
-          (async () => {
-            try {
-              const payload: any = { message: chatMessage, language: 'en' };
-              if (pref.imageUrl) payload.image_url = pref.imageUrl;
-              else if (pref.imageBase64) payload.image_base64 = (pref.imageBase64.split(',')[1] ?? pref.imageBase64);
-              const { visionChat, chat } = await import('@/lib/api');
-              const res = await visionChat(payload);
-              if (res.error) {
-                // fallback to plain chat endpoint with image mention
-                if (res.error && res.error.includes('404')) setServiceWarning('Vision service not available — using text-only fallback.');
-                const fallbackMsg = `Image: ${pref.imageUrl ? pref.imageUrl : '[attached image]'}\n\n${chatMessage}`;
-                const r2 = await chat(fallbackMsg, 'en');
-                if (r2.error) throw new Error(r2.error);
-                setMessages((s) => [...s, { from: 'bot', text: r2.data?.reply || 'No reply' }]);
-              } else {
-                const j = res.data as any;
-                const reply = (j && (j.diagnosis || j.crop || j.reply)) ? formatVisionResponse(j) : (j?.reply || 'No reply');
-                setMessages((s) => [...s, { from: 'bot', text: reply }]);
-              }
-            } catch (e) {
-              setServiceWarning('Chat service currently unavailable.');
-              setMessages((s) => [...s, { from: 'bot', text: 'Chat service currently unavailable.' }]);
-            } finally {
-              try { sessionStorage.removeItem('chat_prefill'); } catch {}
-            }
-          })();
-        }
-      }
-    } catch (e) {
-      /* ignore */
-    }
-    // Setup Web Speech API if available
-    const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      // No prefill handling — Diagnostic modal no longer opens chat via sessionStorage.
     if (SpeechRecognition) {
       const r = new SpeechRecognition();
       r.lang = 'en-IN';

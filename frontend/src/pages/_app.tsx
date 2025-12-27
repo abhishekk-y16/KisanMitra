@@ -4,6 +4,8 @@ import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import ApiErrorToast from '@/components/ApiErrorToast';
+import { I18nProvider } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 export default function App({ Component, pageProps }: AppProps) {
   const [isOffline, setIsOffline] = useState(false);
@@ -24,23 +26,32 @@ export default function App({ Component, pageProps }: AppProps) {
     };
   }, []);
 
-  return (
-    <>
+  function AppHead() {
+    const { t } = useI18n();
+    return (
       <Head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="theme-color" content="#2E7D32" />
         <link rel="manifest" href={`${basePath || ''}/manifest.json`} />
         <link rel="apple-touch-icon" href={`${basePath || ''}/icons/icon-192x192.png`} />
-        <title>KisanBuddy | किसान मित्र</title>
+        <title>{t('siteTitle')} | {t('siteSubtitle')}</title>
       </Head>
-      {isOffline && (
-        <div className="offline-banner">
-          📴 ऑफलाइन मोड | Offline Mode – Data will sync when connected
-        </div>
-      )}
+    );
+  }
+
+  return (
+    <>
       <ApiErrorToast />
-      <Component {...pageProps} />
+      <I18nProvider>
+        <AppHead />
+        {isOffline && (
+          <div className="offline-banner">
+            📴 { /* keep bilingual */ } {"ऑफलाइन मोड | Offline Mode – Data will sync when connected"}
+          </div>
+        )}
+        <Component {...pageProps} />
+      </I18nProvider>
     </>
   );
 }

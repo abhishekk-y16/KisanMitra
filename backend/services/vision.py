@@ -808,6 +808,7 @@ def diagnose_leaf(image_base64: Optional[str] = None, image_url: Optional[str] =
     Returns:
         Diagnosis result with disease info, symptoms, and treatment recommendations
     """
+    extra_message = None
     try:
         # Validate image or image_url
         image_sha = None
@@ -854,8 +855,8 @@ def diagnose_leaf(image_base64: Optional[str] = None, image_url: Optional[str] =
             try:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
                     futs = {
-                        'groq': ex.submit(lambda: _parse_groq_response(_call_groq_api(image_base64=image_base64, image_url=image_url, language=language))),
-                        'gemini': ex.submit(lambda: _parse_gemini_response(_call_gemini_api(image_base64=image_base64, image_url=image_url, language=language)))
+                        'groq': ex.submit(lambda: _parse_groq_response(_call_groq_api(image_base64=image_base64, image_url=image_url, language=language, extra_message=extra_message))),
+                        'gemini': ex.submit(lambda: _parse_gemini_response(_call_gemini_api(image_base64=image_base64, image_url=image_url, language=language, extra_message=extra_message)))
                     }
                     results = {}
                     for name, fut in futs.items():

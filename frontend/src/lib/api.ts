@@ -50,6 +50,17 @@ export async function apiCall<T>(
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('km_token') : null;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  // Attach user's selected language (persisted in localStorage by I18nProvider)
+  try {
+    if (typeof window !== 'undefined') {
+      const preferred = (localStorage.getItem('kb_lang') || navigator.language || 'en').split('-')[0];
+      if (preferred) headers['X-KB-Lang'] = preferred;
+      // If caller provided a JSON body/object, inject `lang` so backend can condition responses
+      if (body && typeof body === 'object' && !(body instanceof FormData) && !body.lang) {
+        body.lang = preferred;
+      }
+    }
+  } catch (e) {}
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   let lastError: any = null;
@@ -231,6 +242,14 @@ export async function formPost<T>(endpoint: string, form: FormData): Promise<Api
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('km_token') : null;
       const headers: Record<string, string> = {};
+      try {
+        if (typeof window !== 'undefined') {
+          const preferred = (localStorage.getItem('kb_lang') || navigator.language || 'en').split('-')[0];
+          if (preferred) headers['X-KB-Lang'] = preferred;
+          // ensure FormData contains lang for backend
+          if (!form.get('lang')) form.append('lang', preferred);
+        }
+      } catch (e) {}
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const response = await fetch(`${API_URL}${endpoint}`, {

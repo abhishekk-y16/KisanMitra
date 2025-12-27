@@ -28,13 +28,14 @@ interface DiagnosisResult {
 interface DiagnosticModalProps {
   onClose?: () => void;
   inline?: boolean;
+  onDiagnose?: (result: DiagnosisResult) => void;
 }
 
 function isTreatmentDetails(t: any): t is TreatmentDetails {
   return t && typeof t === 'object' && Array.isArray(t.immediateActions);
 }
 
-export function DiagnosticModal({ onClose, inline = false }: DiagnosticModalProps) {
+export function DiagnosticModal({ onClose, inline = false, onDiagnose }: DiagnosticModalProps) {
   const [image, setImage] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [selectedCrop, setSelectedCrop] = useState<string | null>(null);
@@ -107,15 +108,21 @@ export function DiagnosticModal({ onClose, inline = false }: DiagnosticModalProp
         const diag = await visionDiagnostic(payload);
         if (diag.error) {
           setServiceWarning(diag.error);
-          setResult(demoResult());
+          const demo = demoResult();
+          setResult(demo);
+          if (typeof onDiagnose === 'function') onDiagnose(demo);
         } else {
-          setResult(diag.data as DiagnosisResult);
+          const r = diag.data as DiagnosisResult;
+          setResult(r);
+          if (typeof onDiagnose === 'function') onDiagnose(r);
         }
       } catch (err: any) {
         const message = err?.message || String(err) || 'Upload failed';
         setError(message);
         setServiceWarning(message);
-        setResult(demoResult());
+        const demo = demoResult();
+        setResult(demo);
+        if (typeof onDiagnose === 'function') onDiagnose(demo);
       } finally {
         setLoading(false);
       }
@@ -206,39 +213,32 @@ export function DiagnosticModal({ onClose, inline = false }: DiagnosticModalProp
             </select>
           </div>
 
-          <div className="flex gap-2 mt-3">
-            <Button variant="secondary" onClick={() => {
-              // prepare chat prefill payload and navigate
-              const payload: any = { imageUrl: imageUrl || null };
-              if (!payload.imageUrl && image) payload.imageBase64 = image;
-              // Clear any previous prefill
-              try { sessionStorage.setItem('chat_prefill', JSON.stringify(payload)); } catch (e) { /* ignore */ }
-              router.push('/chat');
-            }}>Open in Chat</Button>
-          </div>
-
-          <div className="flex gap-2 mt-3">
-            <Button variant="secondary" onClick={async () => {
-              setSyncing(true);
-              setSyncMessage(null);
-              try {
-                // Attempt to save diagnosis to server (requires auth token)
-                const payload: any = { ...result };
-                if (imageUrl) payload.image_url = imageUrl; // include uploaded URL when available
-                const res = await saveDiagnosis(payload as any);
-                if (res && (res as any).error) {
-                  setSyncMessage('Sync failed: ' + (res as any).error);
-                } else {
-                  setSyncMessage('Synced to your history');
-                }
-              } catch (e: any) {
-                setSyncMessage('Sync failed: ' + (e?.message || String(e)));
-              } finally {
-                setSyncing(false);
-              }
-            }} disabled={syncing}>{syncing ? 'Syncing…' : 'Sync'}</Button>
-            {syncMessage && <div className="text-sm text-neutral-600">{syncMessage}</div>}
-          </div>
+          { !inline && (
+            <>
+              <div className="flex gap-2 mt-3">
+                <Button variant="secondary" onClick={async () => {
+                  setSyncing(true);
+                  setSyncMessage(null);
+                  try {
+                    // Attempt to save diagnosis to server (requires auth token)
+                    const payload: any = { ...result };
+                    if (imageUrl) payload.image_url = imageUrl; // include uploaded URL when available
+                    const res = await saveDiagnosis(payload as any);
+                    if (res && (res as any).error) {
+                      setSyncMessage('Sync failed: ' + (res as any).error);
+                    } else {
+                      setSyncMessage('Synced to your history');
+                    }
+                  } catch (e: any) {
+                    setSyncMessage('Sync failed: ' + (e?.message || String(e)));
+                  } finally {
+                    setSyncing(false);
+                  }
+                }} disabled={syncing}>{syncing ? 'Syncing…' : 'Sync'}</Button>
+                {syncMessage && <div className="text-sm text-neutral-600">{syncMessage}</div>}
+              </div>
+            </>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>

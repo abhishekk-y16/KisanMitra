@@ -33,7 +33,19 @@ try:
     from agents.validator import validate_recommendations
     from agents.orchestrator import create_orchestrator, AgentOrchestrator
     from services.weather import fetch_weather, crop_advisories
+    from services.soil_report import extract_soil_report_data, chat_with_soil_context
     import auth as auth_module
+    # Import new pydantic agents when running from backend directory
+    try:
+        from agents.pydantic_ai_agents import (
+            SoilCropSuitabilityAgent,
+            DiseasePredictionAgent,
+            PesticideSafetyAgent,
+            IntegratedFarmingAgent,
+        )
+    except Exception:
+        # best-effort: continue without agents if import fails here
+        pass
 except ImportError as e:
     # Fall back to package imports (when running from project root)
     from backend.services.agmarknet import fetch_prices, forecast_prices
@@ -48,9 +60,17 @@ except ImportError as e:
     from backend.agents.validator import validate_recommendations
     from backend.agents.orchestrator import create_orchestrator, AgentOrchestrator
     from backend.services.weather import fetch_weather, crop_advisories
+    from backend.services.soil_report import extract_soil_report_data, chat_with_soil_context
     from backend import auth as auth_module
-from fastapi import Depends, Header
+    from backend.agents.pydantic_ai_agents import (
+        SoilCropSuitabilityAgent,
+        DiseasePredictionAgent,
+        PesticideSafetyAgent,
+        IntegratedFarmingAgent,
+    )
+from fastapi import Depends, Header, Request
 import logging
+import re
 
 app = FastAPI(title="KisanBuddy API", version="0.2.0")
 
@@ -208,14 +228,198 @@ def healthz():
     return {"status": "ok"}
 
 
-# Nearby labs feature removed: Geoapify proxy endpoint disabled.
+# Nearby labs feature removed: endpoints for geo lookups have been deprecated.
 
-@app.get("/api/geoapify/places")
-def geoapify_places(lat: str, lng: str, q: str = "soil testing", limit: int = 6):
-    """Proxy Geoapify Places API to find nearby soil testing centres.
-    
-    Uses retries and short timeout to handle slow responses quickly.
+
+@app.post("/api/agents/soil_analysis")
+async def agents_soil_analysis(request: Request):
+    """Run soil-to-crop suitability analysis using `SoilCropSuitabilityAgent`."""
+    import traceback, logging
+    logger = logging.getLogger(__name__)
+    try:
+        # Read and log incoming body and key headers for debugging
+        try:
+            raw = request._body if hasattr(request, '_body') else None
+        except Exception:
+            raw = None
+        try:
+            payload = await request.json()
+        except Exception:
+            # fallback: read body bytes
+            payload = None
+            try:
+                body_bytes = await request.body()
+                payload = body_bytes.decode('utf-8', errors='ignore')
+            except Exception:
+                payload = None
+
+        headers_to_log = {k: v for k, v in request.headers.items() if k.lower().startswith('x-') or k.lower().startswith('origin') or k.lower().startswith('referer')}
+        logger.info("[agents_soil_analysis] incoming payload keys=%s headers=%s", (list(payload.keys()) if isinstance(payload, dict) else type(payload)), headers_to_log)
+
+        # Route through central dispatcher for uniform behavior and easier testing
+        result = _central_agent_dispatch(payload if isinstance(payload, dict) else {})
+        return result
+    except Exception as e:
+        tb = traceback.format_exc()
+        logger.exception("agents_soil_analysis failed: %s", e)
+        # Return traceback in development to aid debugging
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content={"error": str(e), "trace": tb}, status_code=500)
+
+
+# Centralized agent dispatcher
+def _central_agent_dispatch(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Dispatch to specific pydantic agents based on payload content.
+
+    This central entrypoint lets the frontend call a single API and the
+    server route the request to the appropriate specialized agent.
     """
+    # Defensive imports (agents may not be available in some environments)
+    try:
+        agent_soil = SoilCropSuitabilityAgent() if 'SoilCropSuitabilityAgent' in globals() else None
+    except Exception:
+        agent_soil = None
+    try:
+        agent_disease = DiseasePredictionAgent() if 'DiseasePredictionAgent' in globals() else None
+    except Exception:
+        agent_disease = None
+    try:
+        agent_chem = PesticideSafetyAgent() if 'PesticideSafetyAgent' in globals() else None
+    except Exception:
+        agent_chem = None
+    try:
+        agent_integrated = IntegratedFarmingAgent() if 'IntegratedFarmingAgent' in globals() else None
+    except Exception:
+        agent_integrated = None
+
+    # Heuristic routing
+    # If payload has explicit `intent`, honor it
+    intent = (payload.get('intent') if isinstance(payload, dict) else None) or payload.get('action') if isinstance(payload, dict) else None
+
+    # If frontend sends an `analyses` payload (soil_report/diagnostic flows),
+    # extract soil_and_crops.primary_crop and route to the soil agent.
+    # This handles the diagnostic UI sending analysis objects rather than
+    # `soil_data` directly.
+    if isinstance(payload, dict) and payload.get('analyses'):
+        try:
+            soil_and_crops = payload.get('analyses', {}).get('soil_and_crops', {})
+            primary = soil_and_crops.get('primary_crop', {})
+            # Build a consolidated soil_data dict for the agent
+            soil_data = {}
+            if isinstance(primary, dict):
+                soil_data.update(primary)
+            # include higher-level keys from soil_and_crops as context
+            for k in ('rotation_plan', 'soil_amendments_needed', 'risk_factors', 'estimated_yield_improvement', 'alternative_crops'):
+                if k in soil_and_crops:
+                    soil_data[k] = soil_and_crops[k]
+            if agent_soil:
+                plan = agent_soil.analyze_soil_suitability(soil_data or {})
+                return plan.dict()
+        except Exception:
+            # Fall through to other heuristics on error
+            pass
+
+    # If soil data present, prefer soil agent
+    if isinstance(payload, dict) and payload.get('soil_data'):
+        if agent_soil:
+            plan = agent_soil.analyze_soil_suitability(payload.get('soil_data', {}))
+            return plan.dict()
+
+    # If disease-related keys present
+    if isinstance(payload, dict) and (payload.get('disease_name') or payload.get('symptoms') or payload.get('crop')):
+        if agent_disease:
+            name = payload.get('disease_name', 'Unknown')
+            severity = float(payload.get('current_severity', 10.0)) if payload.get('current_severity') is not None else 10.0
+            forecast = agent_disease.predict_disease_spread(name, severity, payload.get('location', {}), payload.get('crop', ''), weather_data=payload.get('weather_data'))
+            return forecast.dict()
+
+    # If chemical/chemical_name present
+    if isinstance(payload, dict) and (payload.get('chemical_name') or payload.get('chemical')):
+        if agent_chem:
+            chem = payload.get('chemical_name') or payload.get('chemical')
+            crop = payload.get('crop')
+            days = int(payload.get('days_to_harvest', 30))
+            res = agent_chem.validate_pesticide(chem, crop, weather_data=payload.get('weather_data'), days_to_harvest=days)
+            return res.dict()
+
+    # If explicit comprehensive request or fallback
+    if intent == 'comprehensive' or payload.get('comprehensive') or payload.get('action') == 'comprehensive':
+        if agent_integrated:
+            res = agent_integrated.comprehensive_farm_analysis(payload.get('soil_data', {}), disease_info=payload.get('disease_info'), location=payload.get('location'), weather_data=payload.get('weather_data'))
+            # integrated returns possibly dict-like
+            return res if isinstance(res, dict) else (res.dict() if hasattr(res, 'dict') else {'result': res})
+
+    # As a last resort, try integrated agent if available
+    if agent_integrated:
+        res = agent_integrated.comprehensive_farm_analysis(payload.get('soil_data', {}), disease_info=payload.get('disease_info'), location=payload.get('location'), weather_data=payload.get('weather_data'))
+        return res if isinstance(res, dict) else (res.dict() if hasattr(res, 'dict') else {'result': res})
+
+    # Nothing available: echo back
+    return { 'error': 'No agent available to handle request', 'payload': payload }
+
+
+@app.post('/api/agents/central')
+async def agents_central(request: Request):
+    """Centralized agent endpoint. Accepts JSON payload and dispatches to appropriate pydantic agent."""
+    try:
+        payload = await request.json()
+    except Exception:
+        try:
+            body = (await request.body()).decode('utf-8', errors='ignore')
+            import json
+            payload = json.loads(body) if body else {}
+        except Exception:
+            payload = {}
+
+    try:
+        result = _central_agent_dispatch(payload if isinstance(payload, dict) else {})
+        return result
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        from fastapi.responses import JSONResponse
+        logging.getLogger(__name__).exception('agents_central failed: %s', e)
+        return JSONResponse(content={'error': str(e), 'trace': tb}, status_code=500)
+
+
+@app.post("/api/agents/disease_prediction")
+def agents_disease_prediction(payload: Dict[str, Any]):
+    """Predict disease spread using `DiseasePredictionAgent`.
+
+    Expected payload: {"disease_name": str, "current_severity": float, "location": {"lat":..,"lng":..}, "crop": str, "weather_data": {..}}
+    """
+    try:
+        # Delegate to central dispatcher to keep routing logic in one place
+        result = _central_agent_dispatch(payload if isinstance(payload, dict) else {})
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/agents/chemical_validation")
+def agents_chemical_validation(payload: Dict[str, Any]):
+    """Validate a chemical recommendation using `PesticideSafetyAgent`."""
+    try:
+        # Route via central dispatcher for consistency
+        result = _central_agent_dispatch(payload if isinstance(payload, dict) else {})
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/agents/comprehensive")
+def agents_comprehensive(payload: Dict[str, Any]):
+    """Run integrated farm analysis across soil, disease and chemical safety.
+
+    Payload example: {"soil_data": {...}, "disease_info": {...}, "location": {...}, "weather_data": {...}}
+    """
+    try:
+        # Delegate to central dispatcher to run integrated analysis
+        result = _central_agent_dispatch(payload if isinstance(payload, dict) else {})
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     key = os.getenv("GEOAPIFY_API_KEY") or ""
     if not key:
         raise HTTPException(status_code=500, detail="Geoapify key not configured on server")
@@ -270,6 +474,60 @@ def geoapify_places(lat: str, lng: str, q: str = "soil testing", limit: int = 6)
     # Return empty features on failure so frontend shows "No results found" instead of error
     logging.getLogger("uvicorn.error").warning(f"[geoapify_places] failed after {attempts} attempts: {last_err}")
     return {"features": []}
+
+# Specialized endpoint: find nearby soil testing centres with robust strategies
+@app.get("/api/geoapify/soil_centres")
+def geoapify_soil_centres(lat: float, lng: float, radius_km: int = 100, limit: int = 8, query: str = "soil testing"):
+    """Find nearby soil testing centres using multiple query names and categories.
+
+    Uses the robust helper in services.agmarknet to try various strategies and
+    returns a normalized list of places with name/coords/distance.
+    """
+    # Endpoint removed: soil-centres lookup deprecated
+    raise HTTPException(status_code=404, detail="This endpoint has been removed")
+
+# Soil Report OCR and Chat endpoints
+@app.post("/api/soil_report/extract")
+async def extract_soil_report(file: UploadFile = File(...)):
+    """Extract structured data from soil analysis report image using Gemini Vision OCR."""
+    try:
+        # Read image file
+        contents = await file.read()
+        import base64
+        image_base64 = base64.b64encode(contents).decode('utf-8')
+        
+        # Extract data
+        from services.soil_report import extract_soil_report_data
+        data = extract_soil_report_data(image_base64)
+        
+        return data
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Soil report extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class SoilChatRequest(BaseModel):
+    soil_data: Dict[str, Any]
+    message: str
+    chat_history: Optional[List[Dict[str, str]]] = []
+
+
+@app.post("/api/soil_report/chat")
+def soil_chat(req: SoilChatRequest):
+    """Chat with AI about crop suitability based on soil report data."""
+    try:
+        from services.soil_report import chat_with_soil_context
+        result = chat_with_soil_context(
+            soil_data=req.soil_data,
+            user_message=req.message,
+            chat_history=req.chat_history
+        )
+        return result
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Soil chat failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/metrics")
 def metrics_endpoint(authorization: Optional[str] = Header(None)):
@@ -559,6 +817,15 @@ class VisionChatRequest(BaseModel):
     language: Optional[str] = 'en'
 
 
+class DiagnosticChatRequest(BaseModel):
+    image_base64: Optional[str] = None
+    image_url: Optional[str] = None
+    message: str
+    language: Optional[str] = 'en'
+    chat_history: Optional[List[Dict[str, str]]] = []
+    crop_hint: Optional[str] = None
+
+
 @app.post('/api/vision_chat')
 def vision_chat(req: VisionChatRequest):
     try:
@@ -582,6 +849,164 @@ def vision_chat(req: VisionChatRequest):
     except Exception as e:
         # Log full exception with traceback for easier debugging in server logs
         logging.getLogger(__name__).exception("vision_chat handler error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post('/api/diagnostic/chat')
+def diagnostic_chat(req: DiagnosticChatRequest):
+    """Chat-style endpoint for the diagnostic UI. Returns {success, updated_history} similar to soil_report/chat."""
+    try:
+        # Use vision analyzer to produce a human-friendly assistant message
+        # Prefer the higher-level `diagnose_leaf` function when an image is provided.
+        # `diagnose_leaf` calls Groq and Gemini and merges results, so it will
+        # generally agree with the `visionDiagnostic` path used by `DiagnosticModal`.
+        from services.vision import groq_analyze_full, diagnose_leaf
+
+        if req.image_base64 or req.image_url:
+            out = diagnose_leaf(image_base64=req.image_base64, image_url=req.image_url, crop=(req.crop_hint or None), language=req.language or 'en')
+        else:
+            out = groq_analyze_full(image_base64=req.image_base64, image_url=req.image_url, message=req.message, language=req.language or 'en')
+
+        # If the model failed to identify the crop, try to extract a crop name
+        # from the user's message or chat_history and re-run analysis with that hint.
+        try:
+            crop_name = None
+            def extract_crop_from_text(text: str) -> Optional[str]:
+                if not text:
+                    return None
+                import re
+                # common crop list for simple heuristics
+                COMMON = ["rice","wheat","maize","corn","tomato","cotton","okra","eggplant","brinjal","chillies","chili","chilli","potato","banana","sugarcane"]
+                # look for explicit patterns: "crop is X", "this is X", "it's X"
+                m = re.search(r"(?:crop is|this is|it is|it's|its)\s+([A-Za-z\- ]{3,30})", text, re.IGNORECASE)
+                if m:
+                    return m.group(1).strip().split()[0]
+                # fallback: look for any common crop name as a whole word
+                for c in COMMON:
+                    if re.search(rf"\b{re.escape(c)}\b", text, re.IGNORECASE):
+                        return c
+                return None
+
+            # primary source: explicit crop_hint from request
+            crop_name = (req.crop_hint or None)
+            if not crop_name:
+                # next: current message
+                crop_name = extract_crop_from_text(str(req.message or ""))
+            # secondary: scan recent user messages in chat_history (reverse chronological)
+            if not crop_name and req.chat_history:
+                for entry in reversed(req.chat_history):
+                    if entry.get('role') == 'user':
+                        crop_name = extract_crop_from_text(entry.get('content',''))
+                        if crop_name:
+                            break
+
+            # If model returned unknown crop and we found a hint, re-run with hint
+            model_crop = (out.get('crop') if isinstance(out, dict) else None)
+            if (not model_crop or str(model_crop).lower() in ('unknown','')) and crop_name:
+                logging.getLogger(__name__).info("diagnostic_chat: model returned unknown crop, retrying with user-provided crop hint=%s", crop_name)
+                hint_message = f"Assume crop is {crop_name}. " + (req.message or "")
+                try:
+                    out2 = groq_analyze_full(image_base64=req.image_base64, image_url=req.image_url, message=hint_message, language=req.language or 'en')
+                    # prefer out2 if it contains a diagnosis or treatment
+                    if isinstance(out2, dict) and (out2.get('diagnosis') or out2.get('treatment')):
+                        out = out2
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # Build assistant content: prefer readable diagnosis fields, else pretty JSON
+        assistant_text = ''
+        try:
+            if isinstance(out, dict):
+                parts = []
+                if out.get('diagnosis'):
+                    parts.append(f"Diagnosis: {out.get('diagnosis')}")
+                if out.get('crop'):
+                    parts.append(f"Crop: {out.get('crop')}")
+                if out.get('confidence') is not None:
+                    parts.append(f"Confidence: {out.get('confidence')}")
+                if out.get('treatment'):
+                    treat = out.get('treatment')
+                    if isinstance(treat, dict):
+                        ia = treat.get('immediateActions') or []
+                        parts.append("Treatment (immediate): " + (", ".join(ia) if ia else str(treat)))
+                    else:
+                        parts.append(f"Treatment: {treat}")
+                if parts:
+                    assistant_text = "\n".join(parts)
+                else:
+                    import json
+                    assistant_text = json.dumps(out, indent=2, ensure_ascii=False)
+            else:
+                assistant_text = str(out)
+        except Exception:
+            assistant_text = str(out)
+
+        # If assistant_text lacks a useful diagnosis (e.g., Unknown crop/diagnosis),
+        # try to extract a prior detection summary from chat_history (DiagnosticModal)
+        # which often uses the format: "Detected: <DIAGNOSIS> (<PERCENT>%)\nSuggested: <...>"
+        try:
+            needs_fallback = False
+            if isinstance(out, dict):
+                diag = str(out.get('diagnosis', '')).lower()
+                cropv = str(out.get('crop', '')).lower()
+                conf = float(out.get('confidence', 0.0)) if out.get('confidence') is not None else 0.0
+                if (not diag or diag in ('unknown', 'unknown condition', '')) and conf <= 0.1:
+                    needs_fallback = True
+            else:
+                # if assistant_text contains 'Unknown' or empty, fallback
+                if not assistant_text or 'unknown' in assistant_text.lower():
+                    needs_fallback = True
+
+            if needs_fallback and req.chat_history:
+                detected = None
+                suggested = None
+                # scan for a detected summary in recent history
+                for entry in reversed(req.chat_history[-8:]):
+                    c = (entry.get('content') or '') if isinstance(entry, dict) else ''
+                    if not c: continue
+                    m = re.search(r'Detected:\s*([^\n\(]+)\s*\((\d+)%\)', c, re.IGNORECASE)
+                    if m:
+                        detected = m.group(1).strip()
+                        # try to capture Suggested: line
+                        sm = re.search(r'Suggested:\s*(.+)', c, re.IGNORECASE)
+                        if sm:
+                            suggested = sm.group(1).strip()
+                        break
+
+                if detected:
+                    # synthesize a human-friendly assistant_text and structured treatment
+                    det_diag = detected
+                    treat_text = suggested or 'Follow recommended local extension guidance; use cupric treatments for bacterial spot and remove infected tissue.'
+                    assistant_text = f"Diagnosis (from prior detection): {det_diag}\nTreatment: {treat_text}"
+
+                    # Build a simple TreatmentDetails object
+                    immediate = []
+                    organic = []
+                    future = []
+                    # simple heuristics from suggested text
+                    if 'remove' in treat_text.lower() or 'remove' in det_diag.lower():
+                        immediate.append('Remove heavily infected leaves or plants')
+                    if 'copper' in treat_text.lower() or 'cupr' in treat_text.lower():
+                        immediate.append('Apply copper-based bactericide according to label instructions')
+                    if 'neem' in treat_text.lower():
+                        organic.append('Spray neem oil as preventative')
+                    future.append('Improve sanitation and air circulation; rotate crops where possible')
+
+                    updated = list(req.chat_history or [])
+                    updated.append({'role': 'assistant', 'content': assistant_text})
+                    return {'success': True, 'updated_history': updated}
+        except Exception:
+            # ignore fallback errors and continue
+            pass
+
+        updated = list(req.chat_history or [])
+        updated.append({ 'role': 'user', 'content': req.message })
+        updated.append({ 'role': 'assistant', 'content': assistant_text })
+
+        return { 'success': True, 'updated_history': updated }
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 

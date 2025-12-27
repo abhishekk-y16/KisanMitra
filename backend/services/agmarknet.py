@@ -113,7 +113,8 @@ def fetch_prices(commodity: str, market: Optional[str] = None, state: Optional[s
             for city, meta in cache.items():
                 lat = meta.get('lat')
                 lon = meta.get('lon')
-                price_seed = abs(hash(city)) % 1000
+                # Include commodity in synthetic seed so different crops produce distinct prices
+                price_seed = abs(hash((city, str(commodity).strip().lower()))) % 1000
                 modal_price = 1800 + (price_seed % 1200)
                 records.append({
                     'market': city,
@@ -378,25 +379,61 @@ def geocode_market_osm(market_name: str, state: Optional[str] = None) -> Optiona
             resp = client.get(url, params=params, headers={"User-Agent": "KisanBuddy/1.0 (hackathon)"})
             resp.raise_for_status()
             data = resp.json()
-            if not data:
-                return None
-            item = data[0]
-            lat = float(item["lat"])
-            lon = float(item["lon"])
+        if not data:
+            return None
+        item = data[0]
+        lat = float(item["lat"])
+        lon = float(item["lon"])
 
-            # Save to cache
-            try:
-                cache[q] = {"lat": lat, "lon": lon, "timestamp": int(time.time())}
-                CACHE_PATH.write_text(json.dumps(cache), encoding="utf-8")
-            except Exception:
-                pass
+        # Save to cache
+        try:
+            cache[q] = {"lat": lat, "lon": lon, "timestamp": int(time.time())}
+            CACHE_PATH.write_text(json.dumps(cache), encoding="utf-8")
+        except Exception:
+            pass
 
-            try:
-                last_call_file.write_text(str(time.time()))
-            except Exception:
-                pass
+        try:
+            last_call_file.write_text(str(time.time()))
+        except Exception:
+            pass
 
-            return (lat, lon)
+        return (lat, lon)
+    except Exception:
+        return None
+
+
+def reverse_geocode_state(origin: Tuple[float, float]) -> Optional[str]:
+    """Resolve the administrative state name for given coordinates using Nominatim.
+    Caches results in tmp_reverse_geocode.json to minimize calls.
+    """
+    try:
+        lat, lon = origin
+        CACHE_PATH = Path(__file__).parent.parent / "tmp_reverse_geocode.json"
+        key = f"{round(float(lat), 4)}:{round(float(lon), 4)}"
+        cache = {}
+        try:
+            if CACHE_PATH.exists():
+                cache = json.loads(CACHE_PATH.read_text(encoding="utf-8") or "{}")
+        except Exception:
+            cache = {}
+        if key in cache:
+            return cache.get(key)
+        url = "https://nominatim.openstreetmap.org/reverse"
+        params = {"lat": lat, "lon": lon, "format": "json", "zoom": 10, "addressdetails": 1}
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.get(url, params=params, headers={"User-Agent": "KisanBuddy/1.0 (reverse-geocode)"})
+            resp.raise_for_status()
+            data = resp.json()
+            addr = data.get("address") or {}
+            # Common keys: state, state_district, county
+            state = addr.get("state") or addr.get("state_district") or addr.get("county")
+            if state:
+                try:
+                    cache[key] = state
+                    CACHE_PATH.write_text(json.dumps(cache), encoding="utf-8")
+                except Exception:
+                    pass
+                return state
     except Exception:
         return None
 
@@ -418,12 +455,14 @@ def search_places_geoapify(origin: Tuple[float, float], radius_km: int = 50, lim
     attempts = 3
     data = None
     last_err = None
+    # Normalize parameter order to Geoapify expectation (lon,lat) and cap radius to 50km
+    radius_m = int(min(float(radius_km) * 1000.0, 50000))
     for attempt in range(attempts):
         params = {
             "apiKey": GEOAPIFY_KEY,
-            "filter": f"circle:{lat},{lon},{int(radius_km*1000)}",
+            "filter": f"circle:{lon},{lat},{radius_m}",
             "limit": limit,
-            "bias": f"proximity:{lat},{lon}",
+            "bias": f"proximity:{lon},{lat}",
             "lang": "en",
         }
         if categories and attempt <= 1:
@@ -441,12 +480,16 @@ def search_places_geoapify(origin: Tuple[float, float], radius_km: int = 50, lim
         except httpx.HTTPStatusError as he:
             last_err = he
             status = None
+            body_text = None
             try:
                 status = he.response.status_code
+                body_text = he.response.text
             except Exception:
                 status = None
+            # Log provider error body for 400 to aid debugging
             if status == 400:
-                # relaxed retry on 400
+                logger.debug(f"[search_places_geoapify] Geoapify 400 body: {body_text}")
+                # relaxed retry on 400 (drop filter in later attempts may be tried by caller)
                 time.sleep(0.5 * (attempt + 1))
                 continue
             else:
@@ -491,94 +534,7 @@ def search_places_geoapify(origin: Tuple[float, float], radius_km: int = 50, lim
     return deduped
 
 
-def search_soil_testing_centres_geoapify(origin: Tuple[float, float], radius_km: int = 100, limit: int = 20, query: str = "soil testing") -> List[Dict[str, Any]]:
-    """SEPARATE function for soil testing centres - does NOT affect mandis search.
-    
-    Tries multiple strategies to find results: with categories, without, no filters, etc.
-    Returns list of place dicts with keys: name, lat, lon, distance_km, properties.
-    """
-    lat, lon = origin
-    GEOAPIFY_KEY = os.getenv("GEOAPIFY_API_KEY", "")
-    out = []
-    
-    if not GEOAPIFY_KEY:
-        logger.info("[search_soil_testing_centres_geoapify] GEOAPIFY_API_KEY not set - returning empty")
-        return out
-
-    url = "https://api.geoapify.com/v2/places"
-    logger.info(f"[search_soil_testing_centres_geoapify] Starting search for '{query}' at {lat},{lon} within {radius_km}km")
-    
-    # Try multiple strategies to find results
-    strategies = [
-        {"q": query, "categories": "commercial.agrarian,education.school", "filter": f"circle:{lat},{lon},{int(radius_km*1000)}", "limit": limit, "bias": f"proximity:{lat},{lon}", "lang": "en", "name": "categories+query"},
-        {"q": query, "filter": f"circle:{lat},{lon},{int(radius_km*1000)}", "limit": limit, "lang": "en", "name": "query only"},
-        {"q": query, "limit": limit, "lang": "en", "name": "query no radius"},
-        {"q": query, "categories": "service.laboratory,service.education", "filter": f"circle:{lat},{lon},{int(radius_km*1000)}", "limit": limit, "lang": "en", "name": "lab categories"},
-        {"q": "testing laboratory", "filter": f"circle:{lat},{lon},{int(radius_km*1000)}", "limit": limit, "lang": "en", "name": "testing lab query"},
-        {"q": "soil laboratory", "filter": f"circle:{lat},{lon},{int(radius_km*1000)}", "limit": limit, "lang": "en", "name": "soil lab query"},
-        {"q": "laboratory", "filter": f"circle:{lat},{lon},{int(radius_km*1000)}", "limit": limit, "lang": "en", "name": "lab only"},
-    ]
-    
-    for strategy in strategies:
-        strategy_name = strategy.pop("name")
-        params = {k: v for k, v in strategy.items() if v}
-        params["apiKey"] = GEOAPIFY_KEY
-        
-        logger.info(f"[search_soil_testing_centres_geoapify] Attempt '{strategy_name}': q={params.get('q')}, categories={params.get('categories')}")
-        
-        try:
-            with httpx.Client(timeout=20.0) as client:
-                resp = client.get(url, params=params)
-                resp.raise_for_status()
-                data = resp.json()
-                features = data.get("features", [])
-                
-                logger.info(f"[search_soil_testing_centres_geoapify] Strategy '{strategy_name}' returned {len(features)} raw features")
-                
-                # Log first few results for debugging
-                if features:
-                    for idx, f in enumerate(features[:3]):
-                        props = f.get("properties") or {}
-                        logger.debug(f"  Feature {idx}: name='{props.get('name')}', address='{props.get('address_line1')}'")
-                
-                for f in features:
-                    props = f.get("properties") or {}
-                    name = props.get("name") or props.get("address_line1") or props.get("formatted") or ""
-                    geom = f.get("geometry") or {}
-                    coords = None
-                    if geom and geom.get("coordinates"):
-                        try:
-                            lon_f, lat_f = geom.get("coordinates")[:2]
-                            coords = (float(lat_f), float(lon_f))
-                        except:
-                            coords = None
-                    distance = round(_haversine_km(origin, coords), 2) if coords else None
-                    if name:
-                        out.append({"name": name, "lat": coords[0] if coords else None, "lon": coords[1] if coords else None, "distance_km": distance, "properties": props})
-                        logger.debug(f"  Added: {name} (distance: {distance}km)")
-                    
-                if out:
-                    logger.info(f"[search_soil_testing_centres_geoapify] Found results with strategy '{strategy_name}', stopping search")
-                    break
-        except Exception as e:
-            logger.warning(f"[search_soil_testing_centres_geoapify] Strategy '{strategy_name}' failed: {e}", exc_info=True)
-            time.sleep(0.1)
-    
-    logger.info(f"[search_soil_testing_centres_geoapify] Total raw results before dedup: {len(out)}")
-    
-    # Dedupe and filter by radius
-    seen = set()
-    deduped = []
-    for m in out:
-        n = (m.get("name") or "").strip().lower()
-        if n and n not in seen:
-            seen.add(n)
-            deduped.append(m)
-    
-    deduped = [d for d in deduped if d.get("distance_km") is not None and d.get("distance_km") <= float(radius_km)]
-    deduped = sorted(deduped, key=lambda x: x.get("distance_km", 999999))
-    logger.info(f"[search_soil_testing_centres_geoapify] Final: {len(deduped)} centres")
-    return deduped
+# Removed: search_soil_testing_centres_geoapify - feature deprecated per project decision
 
 
 def find_nearest_mandis(commodity: str, origin: Tuple[float, float], radius_km: int = 100, top_n: int = 5,
@@ -635,12 +591,13 @@ def find_nearest_mandis(commodity: str, origin: Tuple[float, float], radius_km: 
             attempts = 3
             data = None
             last_err = None
+            radius_m = int(min(float(radius_km) * 1000.0, 50000))
             for attempt in range(attempts):
                 params = {
                     "apiKey": GEOAPIFY_KEY,
-                    "filter": f"circle:{lat},{lon},{int(radius_km*1000)}",
+                    "filter": f"circle:{lon},{lat},{radius_m}",
                     "limit": limit,
-                    "bias": f"proximity:{lat},{lon}",
+                    "bias": f"proximity:{lon},{lat}",
                     "lang": "en",
                 }
                 # on first attempt send categories and a text hint
@@ -659,18 +616,18 @@ def find_nearest_mandis(commodity: str, origin: Tuple[float, float], radius_km: 
                         break
                 except httpx.HTTPStatusError as he:
                     last_err = he
-                    # If 400 Bad Request and we still have retries, relax parameters and retry
                     status = None
+                    body_text = None
                     try:
                         status = he.response.status_code
+                        body_text = he.response.text
                     except Exception:
                         status = None
                     if status == 400:
-                        # small backoff before retry
+                        logger.debug(f"[find_nearest_mandis::_search_mandis_geoapify] Geoapify 400 body: {body_text}")
                         time.sleep(0.5 * (attempt + 1))
                         continue
                     else:
-                        # other HTTP error — stop retrying
                         break
                 except Exception as e:
                     last_err = e
@@ -678,9 +635,9 @@ def find_nearest_mandis(commodity: str, origin: Tuple[float, float], radius_km: 
                     continue
             if data is None:
                 if last_err:
-                            logger.debug("[find_nearest_mandis] Geoapify search ultimately failed: %s", last_err)
+                    logger.debug("[find_nearest_mandis] Geoapify search ultimately failed: %s", last_err)
                 else:
-                            logger.debug("[find_nearest_mandis] Geoapify search returned no data")
+                    logger.debug("[find_nearest_mandis] Geoapify search returned no data")
             features = data.get("features") or [] if data else []
             for f in features:
                 props = f.get("properties", {})
@@ -804,7 +761,7 @@ def find_nearest_mandis(commodity: str, origin: Tuple[float, float], radius_km: 
             logger.debug("[find_nearest_mandis] geocache fallback failed: %s", e)
     results: List[Dict[str, Any]] = []
 
-    # Load cache (keyed by date -> normalized_market -> {record})
+    # Load cache (keyed by date -> commodity_lower -> normalized_market -> {record})
     cache = _load_cache()
     today = datetime.utcnow().date().isoformat()
     if today not in cache:
@@ -884,7 +841,22 @@ def find_nearest_mandis(commodity: str, origin: Tuple[float, float], radius_km: 
     for m in mandis:
         name = m.get("name") or ""
         norm = _normalize_market_name(name)
-        cached = cache[today].get(norm)
+        # Nested cache per commodity to avoid cross-commodity contamination
+        commodity_key = str(commodity or "").strip().lower()
+        day_cache = cache.get(today) or {}
+        commodity_cache = day_cache.get(commodity_key)
+        cached = None
+        if isinstance(commodity_cache, dict):
+            cached = commodity_cache.get(norm)
+        else:
+            # Backward compatibility: old cache shape was {date: {market_norm: price_entry}}
+            # Only use if the cached entry's commodity matches the requested commodity
+            legacy_entry = day_cache.get(norm)
+            try:
+                if legacy_entry and (str(legacy_entry.get('commodity') or '').strip().lower() == commodity_key):
+                    cached = legacy_entry
+            except Exception:
+                cached = None
         if cached:
             # normalize and append cached as immediate result
             try:
@@ -961,6 +933,31 @@ def find_nearest_mandis(commodity: str, origin: Tuple[float, float], radius_km: 
                             best = r
                     except Exception:
                         pass
+            # If still no match for this market, try state-wide commodity prices and pick nearest by geocoding
+            if not best:
+                try:
+                    origin_state = reverse_geocode_state(origin)
+                except Exception:
+                    origin_state = None
+                if origin_state:
+                    try:
+                        rows_state = fetch_prices(commodity=commodity, state=origin_state)
+                    except Exception:
+                        rows_state = []
+                    if rows_state:
+                        nearest = None
+                        nearest_dist = None
+                        for r in rows_state[:50]:
+                            city = r.get('city') or r.get('market') or ''
+                            coords = geocode_market_osm(city, state=origin_state)
+                            if not coords:
+                                continue
+                            d = _haversine_km(origin, coords)
+                            if nearest is None or d < (nearest_dist or 1e9):
+                                nearest = r
+                                nearest_dist = d
+                        if nearest:
+                            best = nearest
             return (market_entry, best or (rows[0] if rows else None), rows)
         except Exception as e:
             logger.debug("[find_nearest_mandis] price fetch failed for %s: %s", name, e)
@@ -1010,9 +1007,14 @@ def find_nearest_mandis(commodity: str, origin: Tuple[float, float], radius_km: 
                     "raw": price_entry,
                 }
                 results.append(entry)
-                # cache the result
+                # cache the result under date -> commodity -> market_norm
                 try:
-                    cache[today][norm] = price_entry
+                    commodity_key = str(commodity or "").strip().lower()
+                    if today not in cache or not isinstance(cache.get(today), dict):
+                        cache[today] = {}
+                    if commodity_key not in cache[today] or not isinstance(cache[today].get(commodity_key), dict):
+                        cache[today][commodity_key] = {}
+                    cache[today][commodity_key][norm] = price_entry
                 except Exception:
                     pass
 

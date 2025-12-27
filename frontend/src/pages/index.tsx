@@ -1,10 +1,66 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { Badge, Card } from '@/components/ui';
 import useCountUp from '@/lib/useCountUp';
+import { useI18n, LANGUAGE_NAMES } from '@/lib/i18n';
+import ReactMarkdown from 'react-markdown';
+import { getApiUrl } from '@/lib/api';
+
+function CentralChat() {
+  const [chatHistory, setChatHistory] = useState<{role:'user'|'assistant';content:string}[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const endRef = useRef<HTMLDivElement | null>(null);
+  const _prevChatLen = useRef(0);
+  useEffect(() => {
+    if (chatHistory.length > _prevChatLen.current) {
+      endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    _prevChatLen.current = chatHistory.length;
+  }, [chatHistory]);
+
+  const send = async () => {
+    if (!input.trim()) return;
+    const message = input.trim();
+    setChatHistory(prev => [...prev, {role:'user', content: message}]);
+    setInput('');
+    setLoading(true);
+    try {
+      const apiBase = getApiUrl();
+      const res = await fetch(`${apiBase}/api/agents/central`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ message }) });
+      if (!res.ok) throw new Error('Server '+res.status);
+      const data = await res.json();
+      const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      setChatHistory(prev => [...prev, {role:'assistant', content}]);
+    } catch (e:any) {
+      setChatHistory(prev => [...prev, {role:'assistant', content: 'Error: '+(e?.message||String(e))}]);
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
+      <div className="text-sm text-neutral-600 mb-2">Ask the centralized agent</div>
+      <div className="h-40 overflow-auto mb-2 space-y-2">
+        {chatHistory.map((m, i) => (
+          <div key={i} className={m.role==='user'? 'text-right':'text-left'}>
+            <div className={`inline-block p-2 rounded ${m.role==='user' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>
+              {m.role==='assistant' ? <ReactMarkdown>{m.content}</ReactMarkdown> : <div>{m.content}</div>}
+            </div>
+          </div>
+        ))}
+        <div ref={endRef} />
+      </div>
+      <div className="flex gap-2">
+        <input value={input} onChange={(e)=>setInput(e.target.value)} onKeyPress={(e)=>e.key==='Enter'&&send()} className="flex-1 px-3 py-2 border rounded" placeholder="Ask: How to treat powdery mildew?" />
+        <button onClick={send} className="px-4 py-2 bg-indigo-600 text-white rounded" disabled={loading}>Ask</button>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
+  const { lang, setLang, t, available } = useI18n();
   const [isOnline, setIsOnline] = useState(true);
   const [greeting, setGreeting] = useState('');
 
@@ -70,15 +126,15 @@ export default function Home() {
     },
     {
       icon: '🧪',
-      title: 'Soil Analysis',
-      subtitle: 'मिट्टी परीक्षण',
-      description: 'Instant soil health assessment with nutrient recommendations',
-      badge: 'AI Powered',
+      title: 'Soil Report Advisor',
+      subtitle: 'मिट्टी रिपोर्ट सलाहकार',
+      description: 'Upload lab reports, get AI crop recommendations via chat',
+      badge: 'OCR + Chat',
       badgeVariant: 'primary' as const,
-      href: '/soil-test',
-      color: 'from-brown-100 to-yellow-50',
-      hoverColor: 'hover:border-yellow-200',
-      textColor: 'text-yellow-700'
+      href: '/soil-report',
+      color: 'from-indigo-100 to-purple-50',
+      hoverColor: 'hover:border-indigo-200',
+      textColor: 'text-indigo-700'
     }
   ];
 
@@ -99,15 +155,20 @@ export default function Home() {
             
             {/* Main Heading */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">
-              Kisan Mitra
+              {t('siteTitle')}
             </h1>
             <p className="text-xl sm:text-2xl font-medium text-green-100 mb-2">
-              किसान मित्र
+              {t('siteSubtitle')}
             </p>
             <p className="text-base sm:text-lg text-white/90 max-w-2xl mx-auto mb-8">
               {greeting}, Farmer. AI-powered agricultural intelligence for Indian farmers — 
               crop diagnostics, market insights, and weather risk analysis
             </p>
+            <div className="absolute right-6 top-6 z-30">
+              <select value={lang} onChange={(e)=>setLang(e.target.value as any)} className="px-2 py-1 rounded bg-white/90 text-sm text-neutral-900 shadow-sm z-40">
+                {available.map(l => <option key={l} value={l}>{LANGUAGE_NAMES[l] ?? l.toUpperCase()}</option>)}
+              </select>
+            </div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
@@ -238,7 +299,7 @@ export default function Home() {
         <Card variant="elevated" className="bg-white/90 backdrop-blur-sm">
           <div className="p-8">
             <h2 className="text-2xl font-bold text-neutral-900 mb-6 text-center">
-              How Kisan Mitra Helps You
+              How {t('siteTitle')} Helps You
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -293,6 +354,11 @@ export default function Home() {
           </div>
         </Card>
 
+        {/* Central Agent Chat */}
+        <div className="mt-8">
+          <CentralChat />
+        </div>
+
       </main>
 
       {/* Footer */}
@@ -302,7 +368,7 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <span className="text-3xl">🌾</span>
               <div>
-                <p className="font-bold text-neutral-900">Kisan Mitra</p>
+                <p className="font-bold text-neutral-900">{t('siteTitle')}</p>
                 <p className="text-xs text-neutral-500">Empowering Indian Farmers with AI</p>
               </div>
             </div>

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/router';
 import { getApiUrl } from '@/lib/api';
 import { Card, Button } from '@/components/ui';
 
 export default function MarketPage() {
-  const [searchCommodity, setSearchCommodity] = useState('Wheat');
+  const [searchCommodity, setSearchCommodity] = useState('');
   const [searchRegion, setSearchRegion] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -24,6 +25,18 @@ export default function MarketPage() {
     (globalThis as any).__KISANBUDDY_DEFAULT_CROP = searchCommodity;
   } catch (e) {}
 
+  // Preselect commodity from URL query (?commodity=Tomato or ?crop=Tomato)
+  const router = useRouter();
+  React.useEffect(() => {
+    if (!searchCommodity) {
+      const q = router.query || {};
+      const fromQuery = (q.commodity as string) || (q.crop as string) || '';
+      if (typeof fromQuery === 'string' && fromQuery.trim()) {
+        setSearchCommodity(fromQuery.trim());
+      }
+    }
+  }, [router.query]);
+
   // On mount, attempt geolocation and fetch nearest mandi
   React.useEffect(() => {
     let mounted = true;
@@ -43,6 +56,10 @@ export default function MarketPage() {
         setNearbyDebug({ req: loc, ts: new Date().toISOString(), radius: radiusKm });
         if (!mounted) return;
         setLocationState(loc);
+        // Do not auto-fetch markets until a commodity is selected by user
+        if (!searchCommodity || !searchCommodity.trim()) {
+          return;
+        }
         setMandiLoading(true);
         // try with retry/backoff and longer timeouts to avoid spurious client-side timeouts
         try {
@@ -128,6 +145,10 @@ export default function MarketPage() {
       const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       setNearbyDebug({ req: loc, ts: new Date().toISOString(), radius: radiusKm });
       setLocationState(loc);
+      // Only fetch nearby markets after the user selects a commodity
+      if (!searchCommodity || !searchCommodity.trim()) {
+        return;
+      }
       setMandiLoading(true);
       try {
         const api = await import('@/lib/api');
@@ -243,6 +264,25 @@ export default function MarketPage() {
                 <h2 className="text-lg font-semibold text-neutral-900 mb-4">🔍 Search Markets</h2>
                 <div className="space-y-3">
                   <div>
+                    <label className="text-xs text-neutral-600 mb-1 block">Quick Select</label>
+                    <select
+                      value={searchCommodity}
+                      onChange={(e)=>setSearchCommodity(e.target.value)}
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <option value="">Select commodity…</option>
+                      <option value="Wheat">Wheat</option>
+                      <option value="Rice">Rice</option>
+                      <option value="Tomato">Tomato</option>
+                      <option value="Potato">Potato</option>
+                      <option value="Maize">Maize</option>
+                      <option value="Cotton">Cotton</option>
+                      <option value="Chillies">Chillies</option>
+                      <option value="Eggplant">Eggplant</option>
+                      <option value="Okra">Okra</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className="text-xs text-neutral-600 mb-1 block">Commodity</label>
                     <input 
                       value={searchCommodity} 
@@ -317,7 +357,7 @@ export default function MarketPage() {
                     <Button 
                       variant="ghost" 
                       onClick={()=>{ 
-                        setSearchCommodity('Wheat'); 
+                        setSearchCommodity(''); 
                         setSearchRegion(''); 
                         setSearchResults(null); 
                         setSearchError(null); 
@@ -446,7 +486,12 @@ export default function MarketPage() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-xl font-semibold text-neutral-900">Nearest Market</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-semibold text-neutral-900">Nearest Market</h2>
+                      {searchCommodity?.trim() && (
+                        <span className="px-2 py-1 text-xs rounded bg-emerald-100 text-emerald-800">for {searchCommodity}</span>
+                      )}
+                    </div>
                     <p className="text-sm text-neutral-500 mt-1">Distance-adjusted effective pricing</p>
                   </div>
                   {nearestMandi && (
@@ -527,6 +572,12 @@ export default function MarketPage() {
                       <div>
                         <div className="text-4xl mb-3">⏳</div>
                         <p className="text-neutral-600">Searching for nearest markets...</p>
+                      </div>
+                    ) : !searchCommodity?.trim() ? (
+                      <div>
+                        <div className="text-4xl mb-3">🛒</div>
+                        <p className="text-neutral-900 font-medium mb-2">Select a commodity to see markets</p>
+                        <p className="text-sm text-neutral-600">Choose a crop (e.g., Wheat, Rice, Tomato) and tap Search.</p>
                       </div>
                     ) : nearbyDebug?.error ? (
                       <div>
